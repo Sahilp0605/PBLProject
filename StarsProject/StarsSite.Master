@@ -1,0 +1,1615 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="StarsSite.master.cs" Inherits="StarsProject.StarsSite" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="ccm" %>
+<!DOCTYPE html>
+<html class="loading" lang="en" data-textdirection="ltr">
+<head runat="server">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+
+    <title>E-Office-Desk</title>
+    <script type="text/javascript" src="js/jquery-3.3.1.js"></script>
+    <script src="plugins/jquery/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="app-assets/vendors/vendors.min.css" />
+    <link rel="stylesheet" type="text/css" href="app-assets/vendors/animate-css/animate.css" />
+    <link rel="stylesheet" type="text/css" href="app-assets/vendors/data-tables/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="app-assets/vendors/data-tables/extensions/responsive/css/responsive.dataTables.min.css" />
+
+    <link rel="stylesheet" type="text/css" href="app-assets/css/themes/vertical-modern-menu-template/materialize.css" />
+    <link rel="stylesheet" type="text/css" href="app-assets/css/themes/vertical-modern-menu-template/style.css" />
+
+    <link href="css/plugins/colorbox.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="js/plugins/jquery.colorbox-min.js"></script>
+
+    <script type="text/javascript">
+
+        function showReminderMsg() {
+            var x = window.localStorage.getItem("LastReminderStamp");
+            if (x != null && x != "") {
+                var laststamp = new Date(window.localStorage.getItem("LastReminderStamp"));
+                var currstamp = new Date();
+                var diffmili = Math.abs(laststamp - currstamp);
+                var minutes = Math.floor(diffmili / 1000) / 60;
+                if (minutes > 2) {
+                    window.localStorage.setItem("LastReminderStamp", new Date());
+                    jQuery.ajax({
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        url: "Services/NagrikService.asmx/GetReminderList",
+                        dataType: "json",
+                        success: function (response) {
+                            var dataSet = JSON.parse(response.d);
+                            var msgString = "";
+                            for (i = 0; i < dataSet.length; i++) {
+                                var rowdata = dataSet[i];
+                                msgString += "<li class='timeline-items timeline-icon-red active'>";
+                                msgString += "<div class='timeline-time'>" + rowdata.CreatedDate + "</div>";
+                                msgString += "<h6 class='timeline-title'>" + rowdata.ModuleName + "</h6>";
+                                msgString += "<p class='timeline-text'>" + rowdata.Description + "</p>";
+                                msgString += "</li>";
+                            }
+                            if (msgString.length > 0) {
+                                $("#ulintroReminder").append(msgString);
+                                const elem = document.getElementById('intromodal');
+                                const instance = M.Modal.init(elem, { dismissible: false });
+                                instance.open();
+                            }
+
+                        },
+                        error: function (r) { alert('Error : ' + r.responseText); },
+                        failure: function (r) { alert('failure'); }
+                    });
+                }
+            }
+            else {
+                window.localStorage.setItem("LastReminderStamp", new Date());
+            }
+        }
+
+        function show_loader() {
+            jQuery("#myLoader").removeClass("hide-loader");
+            jQuery("#myLoader").addClass("loader");
+            //event.preventDefault();
+        }
+
+        function hide_loader() {
+            jQuery("#myLoader").removeClass("loader");
+            jQuery("#myLoader").addClass("hide-loader");
+            //event.preventDefault();
+        }
+
+        window.history.forward(-1);
+        // -----------------------------------------------
+        function hideOpenPopup() {
+            // ------------------------------------------------------------------------------
+            // Build Menu
+            // ------------------------------------------------------------------------------
+            jQuery.ajax({
+                url: 'handler/MenuHandler.ashx',
+                method: 'get',
+                dataType: 'json',
+                success: function (data) {
+                    $("#generalMenuDrop").hide();
+                    var newData = localStorage.getItem('userMenuList');
+                    if (newData == null)
+                        localStorage.setItem('userMenuList', data);
+                    //var divCnt = jQuery("#slide-out");
+                    //buildMenu(divCnt, data);
+                    buildBottomMenu(data)
+                }
+            });
+            // ------------------------------------------------------------------------------
+            //var ud = jQuery('#generalMenuDrop');
+            //ud.hide();
+            //jQuery('#generalMenuDrop').removeClass('active');
+        }
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        // Section : Load Bottom ICON Widgets Menu
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        function buildBottomWidgets() {
+            var strID = '#navigationbaricons';
+            var currID = jQuery(strID);
+            var tmpStr = "";
+            currID.empty();
+            // -----------------------------------------------
+            var newData = localStorage.getItem('userWidgetList');
+            if (newData == null) {
+                jQuery.ajax({
+                    url: '/Services/NagrikService.asmx/webGetMenuIconList',
+                    method: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    dataType: 'json',
+                    success: function (data) {
+                        var resultdata = JSON.parse(data.d);
+                        for (i = 0; i < resultdata.length; i++) {
+                            tmpStr = "";
+                            if (resultdata[i].MenuURL != null) {
+                                tmpStr += '<a id="' + resultdata[i].MenuName + '" href="' + resultdata[i].MenuURL + '" class="float-left mr-1 tooltipped" data-position="top" data-tooltip="' + resultdata[i].MenuText + '">';
+                                tmpStr += '<div class="icon"><img alt="" src="' + resultdata[i].MenuImage + '" height="30" width="30" title="' + resultdata[i].MenuText + '" style="border-radius:50%;" /></div>';
+                                tmpStr += '</a>';
+                                jQuery(tmpStr).appendTo(currID);
+                            }
+                            else {
+                                tmpStr += '<a id="' + resultdata[i].MenuName + '" href="' + resultdata[i].MenuURL + '" class="float-left mr-1 tooltipped" data-position="top" data-tooltip="' + resultdata[i].MenuText + '">';
+                                tmpStr += '<div class="icon"><img alt="" src="' + resultdata[i].MenuImage + '" height="' + resultdata[i].MenuImageHeight + '" width="' + resultdata[i].MenuImageWidth + '" title="' + resultdata[i].MenuText + '" /></div>';
+                                tmpStr += '</a>';
+                                jQuery(tmpStr).appendTo(currID);
+                            }
+                        }
+                        // --------------------------------
+                        //if (resultdata.length<=0)
+                        //{
+                        //    $("#navigation-bar").addClass("hide");
+                        //}
+                    }
+                });
+            }
+        }
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        // Section : Load Report Menu
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        function hideOpenPopupReport() {
+            // ------------------------------------------------------------------------------
+            // Build Menu
+            // ------------------------------------------------------------------------------
+            jQuery.ajax({
+                url: 'handler/ReportHandler.ashx',
+                method: 'get',
+                dataType: 'json',
+                success: function (data) {
+                    var newData = localStorage.getItem('userReportList');
+                    if (newData == null)
+                        localStorage.setItem('userReportList', data);
+                    //var divCnt = jQuery("#slide-out");
+                    buildBottomMenuReport(data)
+                }
+            });
+        }
+        // ------------------------------------------------------------
+        function buildBottomMenuReport(items) {
+            var i = 1;
+            for (i = 1; i <= 8; i++) {
+                var cnt = 0;
+                var strID = '#mreppanel' + i.toString();
+                var currID = jQuery(strID);
+                currID.empty();
+                // -------------------------------
+                jQuery.each(items, function () {
+                    if (this.ParentID == i) {
+                        cnt = cnt + 1;
+                        var tmpStr = "";
+                        tmpStr += '<a href="' + this.ReportURL + '" class="tile" style="padding: 5px 8px; background-color: navy; color:white; border-radius: 8px;border-color: black;border-width: 2px;margin-right: 10px;">';
+                        tmpStr += '<span class="title">' + this.ReportText + '</span>';
+                        tmpStr += '</a>';
+                        jQuery(tmpStr).appendTo(currID);
+                    }
+                });
+                // ---------------------------------------
+                if (cnt > 0) {
+                    jQuery('#mreppanelHead' + i.toString()).show();
+                    jQuery(strID).show();
+                }
+            }
+        }
+
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        function menuCollapsed(isCollapsed) {
+            if (isCollapsed) {
+                $(".sidenav-main").removeClass("nav-lock");
+                $(".navbar-main.nav-collapsible").removeClass("sideNav-lock").addClass("nav-expanded");
+                $(".navbar-toggler i").html("radio_button_unchecked");
+                $("#main").addClass("main-full");
+                $(".sidenav-main.nav-collapsible, .navbar .brand-sidebar").trigger("mouseleave");
+            } else {
+                $(".sidenav-main").addClass("nav-lock").removeClass("nav-collapsed");
+                $(".navbar-main.nav-collapsible").addClass("sideNav-lock").removeClass("nav-collapsed");
+                $(".navbar-toggler i").html("radio_button_checked");
+                $("#main").removeClass("main-full");
+                $(".sidenav-main.nav-collapsible, .navbar .brand-sidebar").trigger("mouseenter");
+            }
+        }
+
+        function showcaseError(xMsg) {
+            M.toast({ html: '<ul id="ulToast" style="list-style:none;">' + xMsg + '</ul>', displayLength: 4000 });
+        }
+
+        function showcaseMessage(xText, xIcon) {
+            xText = (xText == '') ? 'Action Performed !' : xText;
+            xIcon = (xIcon == '') ? 'Info' : xIcon;
+            swal({ title: "Message", text: xText, icon: xIcon });
+        }
+
+        function setNotiMarked() {
+            jQuery.ajax({
+                type: "POST",
+                url: 'DashboardDaily.aspx/UpdateNotificationTimeStamp',
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    $("#spnNotificationCount").text("");
+                    $("#spnNotificationCount").css("display", "none");
+                },
+                error: function (r) { },
+                failure: function (r) { }
+            });
+        }
+
+        function removejscssfile(filename, filetype) {
+            var targetelement = (filetype == "js") ? "script" : (filetype == "css") ? "link" : "none" //determine element type to create nodelist from
+            var targetattr = (filetype == "js") ? "src" : (filetype == "css") ? "href" : "none" //determine corresponding attribute to test for
+            var allsuspects = document.getElementsByTagName(targetelement)
+            for (var i = allsuspects.length; i >= 0; i--) { //search backwards within nodelist for matching elements to remove
+                if (allsuspects[i] && allsuspects[i].getAttribute(targetattr) != null && allsuspects[i].getAttribute(targetattr).indexOf(filename) != -1)
+                    allsuspects[i].parentNode.removeChild(allsuspects[i]) //remove element by calling parentNode.removeChild()
+            }
+        }
+        // ------------------------------------------------------------
+        // Footer : Quick Link
+        // ------------------------------------------------------------
+        function openDashboardDaily() {
+            $('#ifrModuleMaster').attr('src', "DashboardDaily.aspx");
+            $find("mpeMaster").show();
+        }
+        function openDashboardLead() {
+            $('#ifrModuleMaster').attr('src', "DashboardLead.aspx");
+            $find("mpeMaster").show();
+        }
+        function openDashboardSales() {
+            $('#ifrModuleMaster').attr('src', "DashboardAccount.aspx");
+            $find("mpeMaster").show();
+        }
+        function openDashboardSupport() {
+            $('#ifrModuleMaster').attr('src', "DashboardSupport.aspx");
+            $find("mpe").show();
+        }
+        function openCalender() {
+            spnModuleMasterHeader.innerText = "Employee Calendar";
+            $('#ifrModuleMaster').attr('src', "myEventCalender.aspx");
+            $find("mpeMaster").show();
+        }
+        function openTrackEmployee() {
+            spnModuleMasterHeader.innerText = "Sales Executive - Track Visit";
+            $('#ifrModuleMaster').attr('src', "TrackEmployee.aspx");
+            $find("mpeMaster").show();
+
+        }
+        function openCustomerSearch() {
+            spnModuleMasterHeader.innerText = "Customer Activity Information";
+            $('#ifrModuleMaster').attr('src', "SearchCustomer.aspx");
+            $find("mpeMaster").show();
+        }
+        function openProductSearch() {
+            spnModuleMasterHeader.innerText = "Product Information";
+            $('#ifrModuleMaster').attr('src', "ProductSearch.aspx");
+            $find("mpeMaster").show();
+        }
+        function openEmployeeSearch() {
+            spnModuleMasterHeader.innerText = "Employee Activity Information";
+            $('#ifrModuleMaster').attr('src', "SearchEmployee.aspx");
+            $find("mpeMaster").show();
+        }
+        function openOrganizationChart() {
+            spnModuleMasterHeader.innerText = "Organization Mapping";
+            $('#ifrModuleMaster').attr('src', "OrganizationChart.aspx");
+            $find("mpeMaster").show();
+        }
+        function openReGenLedger() {
+            spnModuleMasterHeader.innerText = "Re-Generate Ledger";
+            $('#ifrModuleMaster').attr('src', "ReGenerateUtility.aspx");
+            $find("mpeMaster").show();
+        }
+        function openReGenStock() {
+            spnModuleMasterHeader.innerText = "Re-Generate Stock";
+            $('#ifrModuleMaster').attr('src', "ReGenerateUtility.aspx");
+            $find("mpeMaster").show();
+        }
+        function openChatBox() {
+            spnModuleMasterHeader.innerText = "Chat Box";
+            $('#ifrModuleMaster').attr('src', "ChatBox.aspx");
+            $find("mpeMaster").show();
+        }
+        function openMailBox() {
+            spnModuleMasterHeader.innerText = "Mail Box";
+            $('#ifrModuleMaster').attr('src', "MailBox.aspx");
+            $find("mpeMaster").show();
+        }
+        function openLibrary() {
+            spnModuleMasterHeader.innerText = "Document Gallery";
+            $('#ifrModuleMaster').attr('src', "DocumentGallery.aspx");
+            $find("mpeMaster").show();
+        }
+        function sendQuickEmail() {
+            spnModuleMasterHeader.innerText = "Send Quick Email";
+            $('#ifrModuleMaster').attr('src', "SendQuickEmail.aspx");
+            $find("mpeMaster").show();
+        }
+        function openUploadDocument(viewmode) {
+            if (viewmode != null && viewmode != '') {
+                var string = viewmode;
+                spnModuleMasterHeader.innerText = string[0].toUpperCase() + string.slice(1) + " Upload";
+                $('#ifrModuleMaster').attr('src', "UploadMaster.aspx?view=" + viewmode);
+                $find("mpeMaster").show();
+            }
+        }
+        // ------------------------------------------------------------
+        function buildBottomMenu(items) {
+            jQuery.each(items, function () {
+                var strID = '#mpanel' + this.pkID;
+                var currID = jQuery(strID);
+                currID.empty();
+                if (this.ParentId == null) {
+                    if (this.List && this.List.length > 0) {
+                        // ---------------------------------------
+                        jQuery('#mpanelHead' + this.pkID).show();
+                        jQuery(strID).show();
+                        // ---------------------------------------
+                        jQuery.each(this.List, function () {
+                            var myurl = this.MenuURL.toLowerCase();
+                            var tmpStr = "";
+                            tmpStr += '<div id="' + this.MenuName + '" class="navbox-tiles center-align" style="border-radius:8px;">';
+                            if (myurl.indexOf("mymoduleview.aspx") >= 0)               // myurl.slice(myurl.length - 5)
+                            {
+                                tmpStr += '<a href="' + this.MenuURL + '&MenuID=' + this.pkID + '" class="tile">';
+                            }
+                            else if (myurl.indexOf("viewtelecaller.aspx") >= 0) {
+                                tmpStr += '<a href="' + this.MenuURL + '&MenuID=' + this.pkID + '" class="tile">';
+                            }
+                            else if (myurl.slice(myurl.length - 5) == ".aspx") {
+                                tmpStr += '<a href="' + this.MenuURL + '?MenuID=' + this.pkID + '" class="tile">';
+                            }
+                            else {
+                                tmpStr += '<a href="' + this.MenuURL + '" class="tile">';
+                            }
+                            if (this.MenuLevel <= 2)
+                            {
+                                tmpStr += '<div class="icon">';
+                                tmpStr += '<img alt="" src="' + this.MenuImage + '" height="' + this.MenuImageHeight + '" width="' + this.MenuImageWidth + '" title="Dashboard" />';
+                                tmpStr += '</div>';
+                                tmpStr += '</a>';
+                                tmpStr += '<br /><br /><span class="title" style="font-size:12px;">' + this.MenuText + '</span>';
+                                tmpStr += '</div>';
+                                jQuery(tmpStr).appendTo(currID);
+                            }
+                        });
+                    }
+                }
+
+            });
+        }
+
+        // ------------------------------------------------------------
+        function buildMenu(parent, items) {
+            var cnt = 1;
+            jQuery.each(items, function () {
+                var li = "";
+                if (this.MenuLevel == 1) {
+                    var tmpStr = "";
+                    //alert(this.MenuName)
+                    if (this.MenuURL == "" || this.MenuURL == null) {
+                        tmpStr = "<li id='" + this.MenuName + "' class='bold'>";
+                        tmpStr += "<a class='collapsible-header waves-effect waves-cyan' href='JavaScript:void(0)'>";
+                        tmpStr += "<i class='material-icons'>settings_input_svideo</i>";
+                        tmpStr += "<span class='menu-title' data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                        tmpStr += "</a></li>";
+                    }
+                    else {
+
+                        if (this.MenuLevel == 1 && cnt == 1)
+                            tmpStr = "<li id='" + this.MenuName + "' class='active bold'>";
+                        else
+                            tmpStr = "<li id='" + this.MenuName + "' class='bold'>";
+                        tmpStr += "<a class='active' href='#'>";
+                        tmpStr += "<i class='material-icons'>settings_input_svideo</i>";
+                        tmpStr += "<span class='menu-title' data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                        tmpStr += "</a></li>";
+                    }
+                    li = jQuery(tmpStr);
+                }
+                else {
+                    var tmpStr = "", tmpLevel = "";
+                    //alert(this.MenuName)
+                    /* --------------------------------------------------------------------- */
+                    if (this.MenuURL == "" || this.MenuURL == null) {
+
+                        if (this.MenuLevel == 2) {
+                            tmpStr = "<li id='" + this.MenuName + "' style='margin-left:7px;'>";
+                            tmpStr += "<a class='collapsible-header waves-effect waves-cyan' href='JavaScript:void(0)'>";
+                            tmpStr += "<i class='material-icons'>radio_button_unchecked</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+                        else if (this.MenuLevel == 3) {
+                            tmpStr = "<li id='" + this.MenuName + "' style='margin-left:15px;'>";
+                            tmpStr += "<a class='collapsible-header waves-effect waves-cyan' href='JavaScript:void(0)'>";
+                            tmpStr += "<i class='material-icons'>radio_button_unchecked</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+                        else if (this.MenuLevel == 3) {
+                            tmpStr = "<li id='" + this.MenuName + "' style='margin-left:15px;'>";
+                            tmpStr += "<a class='collapsible-header waves-effect waves-cyan' href='JavaScript:void(0)'>";
+                            tmpStr += "<i class='material-icons'>radio_button_unchecked</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+                    }
+                    else {
+                        if (this.MenuLevel == 2) {
+                            tmpStr = "<li id='" + this.MenuName + "'>";
+                            tmpStr += "<a href='" + this.MenuURL + "'>";
+                            tmpStr += "<i class='material-icons'>lens</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+                        else if (this.MenuLevel == 3) {
+                            tmpStr = "<li id='" + this.MenuName + "'>";
+                            tmpStr += "<a href='" + this.MenuURL + "'>";
+                            tmpStr += "<i class='material-icons'>lens</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+                        else if (this.MenuLevel == 4) {
+                            tmpStr = "<li id='" + this.MenuName + "'>";
+                            tmpStr += "<a href='" + this.MenuURL + "'>";
+                            tmpStr += "<i class='material-icons'>lens</i><span data-i18n='" + this.MenuText + "'>" + this.MenuText + "</span>";
+                            tmpStr += "</a>";
+                            tmpStr += "</li>";
+                        }
+
+                    }
+                    li = jQuery(tmpStr);
+                }
+                // ------------------------------------------------------
+                jQuery(li).appendTo(parent);
+                // ------------------------------------------------------
+                if (this.List && this.List.length > 0) {
+                    var dd = jQuery("<div class='collapsible-body'></div>");
+                    var ul;
+                    if (this.MenuLevel == 2)
+                        ul = jQuery("<ul class='collapsible' data-collapsible='accordion'></ul>");
+                    else
+                        ul = jQuery("<ul class='collapsible collapsible-sub' data-collapsible='accordion'></ul>");
+                    ul.appendTo(dd.appendTo(li));
+                    buildMenu(ul, this.List);
+                }
+                else {
+
+                }
+            });
+        }
+        // ------------------------------------------------------------
+        //document.onreadystatechange = function () {
+        //    if (document.readyState === "complete") {
+        //        hide_loader();
+        //    }
+        //    else {
+        //        window.onload = function () {
+        //            show_loader();
+        //        };
+        //    };
+        //}
+
+
+
+
+    </script>
+
+    <script type="text/javascript">
+        function openNotification(view, pID) {
+            //alert(1);
+            if (view == 'To-Do') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage ToDo Task";
+                var pageUrl = "ToDo.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'FollowUp') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Followup";
+                var pageUrl = "Followup.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Quotation') {
+               Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Quotation";
+                var pageUrl = "Quotation.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Sale Order' || view == 'Sales Order' || view == 'Sales Order Status') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Sales Order";
+                var pageUrl = "SalesOrder.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Inquiry') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Lead";
+                var pageUrl = "InquiryInfo.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Leave Request' || view == 'Leave Request Status') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Leave Request";
+                var pageUrl = "LeaveRequest.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Sales Invoice') {
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Sales Bill";
+                var pageUrl = "SalesBill.aspx?mode=view&id=" + pID;
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'Complaint') {
+                var pageUrl = "Complaint.aspx?mode=" + mode + "&id=" + id;
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Complaints";
+                if ($("#hdnMasterSerialKey").val() == 'ADE9-8SD7-JU89-DF46')     // Jaquel - Quick Complaint
+                    pageUrl = "ComplaintQuick.aspx?mode=view&id=" + id;
+                else
+                    pageUrl = "Complaint.aspx?mode=view&id=" + id;
+
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+            else if (view == 'ComplaintVisit') {
+                var pageUrl = "ComplaintVisit.aspx?mode=" + mode + "&id=" + id;
+                Sys.UI.DomElement.getElementById('<%= spnModuleHeader.ClientID%>').innerHTML = "Manage Complaint Visits";
+                if ($("#hdnMasterSerialKey").val() == 'ADE9-8SD7-JU89-DF46')     // Jaquel - Quick Complaint
+                    pageUrl = "ComplaintVisitQuick.aspx?mode=view&id=" + id;
+                else
+                    pageUrl = "ComplaintVisit.aspx?mode=view&id=" + id;
+
+                $('#ifrModuleDaily').attr('src', pageUrl);
+                $find("mpe").show();
+            }
+
+        }
+    </script>
+
+    <style type="text/css">
+        .loader {
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            left: 45%;
+            top: 45%;
+            z-index: 1000;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hide-loader {
+            display: none;
+        }
+
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://fonts.gstatic.com/s/materialicons/v55/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+        }
+
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .grow {
+            transition: all .2s ease-in-out;
+        }
+
+            .grow:hover {
+                transform: scale(1.5);
+            }
+
+        .btnTopRightCorner {
+            display: block;
+            box-sizing: border-box;
+            width: 30px;
+            height: 30px;
+            border-width: 3px;
+            border-style: solid;
+            border-color: red;
+            border-radius: 100%;
+            background: -webkit-linear-gradient(-45deg, transparent 0%, transparent 46%, white 46%, white 56%,transparent 56%, transparent 100%), -webkit-linear-gradient(45deg, transparent 0%, transparent 46%, white 46%, white 56%,transparent 56%, transparent 100%);
+            background-color: red;
+            box-shadow: 0px 0px 5px 2px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            top: 12px;
+            right: 15px;
+        }
+
+        #sticky {
+            width: 100%;
+            height: 44px;
+            background: #3A4C69;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+        }
+
+        button {
+            background-color: transparent;
+            border: 0;
+            cursor: pointer;
+        }
+
+        .navigation-bar, .navigation-bar .navbox-tiles, .navbox-trigger, .navbox-tiles .tile, .navbox-tiles .tile .icon .fa, .navbox-tiles .tile .title {
+            -webkit-transition: all .3s;
+            transition: all .3s;
+        }
+
+        .navbox-tiles:after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        .navigation-bar {
+            height: 50px;
+            position: relative;
+            z-index: 1000;
+        }
+
+            .navigation-bar .bar {
+                /*background-color: #252525;*/
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                z-index: 2;
+            }
+
+            .navigation-bar .navbox {
+                visibility: hidden;
+                opacity: 0;
+                position: absolute;
+                top: 50px;
+                left: -335px;
+                z-index: 100;
+                -webkit-transform: translateY(-300px);
+                -ms-transform: translateY(-300px);
+                transform: translateY(-300px);
+                -webkit-transition: all .2s;
+                transition: all .2s;
+            }
+
+            .navigation-bar .navbox-tiles {
+                -webkit-transform: translateY(0px);
+                -ms-transform: translateY(0px);
+                transform: translateY(0px);
+            }
+
+            .navigation-bar.navbox-open .navbox-trigger {
+                background-color: red;
+            }
+
+            .navigation-bar.navbox-open .navbox {
+                visibility: visible;
+                opacity: 10;
+                -webkit-transform: translateY(-570px);
+                -ms-transform: translateY(-570px);
+                transform: translateY(-570px);
+                -webkit-transition: opacity .3s, -webkit-transform .3s;
+                transition: opacity .3s, transform .3s;
+            }
+
+            .navigation-bar.navbox-open .navbox-tiles {
+                -webkit-transform: translateY(0);
+                -ms-transform: translateY(0);
+                transform: translateY(0);
+            }
+
+        .navbox-trigger {
+            background-color: red;
+            width: 50px;
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            float: left;
+        }
+
+            .navbox-trigger .fa {
+                font-size: 20px;
+                color: #fff;
+            }
+
+            .navbox-trigger:hover {
+                background-color: #484747;
+            }
+        /*--------------------------------------------------------------*/
+        .navbox {
+            background-color: white;
+            width: 1330px;
+            height: 525px;
+            padding: 5px;
+            -webkit-backface-visibility: initial;
+            backface-visibility: initial;
+            border: none;
+            border-radius: 5px;
+            z-index: 0;
+        }
+        /*--------------------------------------------------------------*/
+        .navbox-tiles {
+            width: 120px;
+            height: 70px;
+            min-height: 70px;
+            padding: 5px;
+            margin: 5px;
+            float: left;
+            border: none;
+            border-radius: 8px;
+            background-color: transparent;
+        }
+
+            .navbox-tiles .tile {
+                display: block;
+                width: 100%;
+                height: 0;
+                padding-bottom: 10px;
+                float: left;
+                border: 2px solid transparent;
+                color: navy;
+                border-radius: 8px;
+                position: relative;
+            }
+
+                .navbox-tiles .tile .icon {
+                    width: 100%;
+                    height: 40px;
+                    text-align: center;
+                    position: relative;
+                    bottom: 0px;
+                    background-color: transparent;
+                }
+
+                    .navbox-tiles .tile .icon .fa {
+                        font-size: 35px;
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        -webkit-transform: translate(-50%, -50%);
+                        -ms-transform: translate(-50%, -50%);
+                        transform: translate(-50%, -50%);
+                        -webkit-backface-visibility: initial;
+                        backface-visibility: initial;
+                    }
+
+                .navbox-tiles .tile .title {
+                    width: 100%;
+                    padding: 5px;
+                    font-size: 12px;
+                    position: relative;
+                    bottom: 0;
+                    text-align: center;
+                }
+
+                .navbox-tiles .tile:hover {
+                    border-color: #fff;
+                    text-decoration: none;
+                }
+
+                .navbox-tiles .tile:not(:nth-child(3n+3)) {
+                    margin-right: 4.54545454545455%;
+                }
+
+                .navbox-tiles .tile:nth-child(n+4) {
+                    margin-top: 15px;
+                }
+
+        @media screen and (max-width: 370px) {
+
+            .navbox-tiles .tile .icon .fa {
+                font-size: 25px;
+            }
+
+            .navbox-tiles .tile .title {
+                padding: 3px;
+                font-size: 11px;
+            }
+        }
+
+        /* ------------------------------------------------------------- */
+        /* Show Profile Content */
+        /* ------------------------------------------------------------- */
+        .glow {
+            font-size: 14px;
+            color: #fff;
+            text-align: center;
+            -webkit-animation: glow 1s ease-in-out infinite alternate;
+            -moz-animation: glow 1s ease-in-out infinite alternate;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .popupsticky {
+            width: 100% !important;
+            height: 100%;
+            background-color: #d4d4a7;
+            color: black;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            position: fixed;
+            bottom: 45px;
+            left: 0;
+            padding: 20px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent; /* make scrollbar transparent */
+        }
+
+        h5 {
+            margin-top: 0px !important;
+            padding: 5px;
+            font-weight: bold !important;
+            color: navy !important;
+        }
+
+        .dropdown-content li > a, .dropdown-content li > span {
+            padding: 10px 5px !important;
+        }
+
+        #slide-out-right .tab a.active {
+            color: red !important;
+        }
+    </style>
+
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body class="vertical-layout vertical-menu-collapsible page-header-dark vertical-modern-menu preload-transitions 2-columns" data-open="click" data-menu="vertical-modern-menu" data-col="2-columns">
+    <div id="myLoader" class="hide-loader"></div>
+    <!-- BEGIN: Header-->
+    <header class="page-topbar" id="header">
+        <div class="navbar navbar-fixed">
+            <nav class="navbar-main navbar-color nav-collapsible nav-expanded navbar-dark gradient-45deg-indigo-purple no-shadow">
+                <div class="nav-wrapper">
+                    <div class="header-search-wrapper ml-0" style="width: 60%;">
+                        <%--<button id="navbox-trigger" class="navbox-trigger mr-2" onclick="javascript:hideOpenPopup();" style="border-radius: 5px; height: 35px;"><i class="material-icons" style="font-size: 40px; left: 5px; top: 2px;">dehaze</i></button>--%>
+                        <button id="navbox-trigger" class="red accent-2 white-text sidenav-trigger theme-cutomizer-trigger mr-2" data-target="theme-cutomizer-out1" onclick="javascript:hideOpenPopup();" style="top: auto; width: 40px; border-radius: 5px; height: 35px;"><i class="material-icons" style="font-size: 30px; left:5px; top:2px;">dehaze</i></button>
+                        <%--<a data-target="theme-cutomizer-out1" href="javascript:void(0);" class="btn btn-customizer red accent-2 white-text sidenav-trigger theme-cutomizer-trigger" style="padding: 0 0.4rem !important;">
+                            <i class="material-icons" style="font-size: 40px; left: 5px; top: 2px;">dehaze</i>
+                        </a>--%>
+                        <h5>
+                            <asp:Label ID="lblModule" runat="server" class="hide-on-med-and-down" ClientIDMode="Static" Text="" Style="color: lightyellow;" />
+                        </h5>
+                    </div>
+                    <ul class="navbar-list right">
+                        <li class="hide-on-med-and-down"><a class="waves-effect waves-block waves-light toggle-fullscreen" href="javascript:void(0);"><i class="material-icons">settings_overscan</i></a></li>
+                        <li><a class="notification-button" onclick="javascript:setNotiMarked();" href="javascript:void(0);" data-target="notificationsdropdown"><i class="material-icons">notifications_none<small><span id="spnNotificationCount" runat="server" class="notification-badge">0</span></small></i></a></li>
+                        <li>
+                            <span id="lblUserTitle" runat="server" class="badge gradient-45deg-yellow-green black-text gradient-shadow" style="margin-top: 22px; border-radius: 8px;"></span>
+                        </li>
+                        <li>
+                            <a class="profile-button" href="javascript:void(0);" data-target="profile-dropdown"><span class="avatar-status avatar-online">
+                                <img id="imgProfileSmall" runat="server" src="images/customer.png" alt="avatar"><i></i></span></a>
+                        </li>
+                        <li><a class="sidenav-trigger" href="#" data-target="slide-out-right"><i class="material-icons">format_indent_increase</i></a></li>
+                    </ul>
+                    <!-- translation-button -->
+                    <ul class="dropdown-content" id="translation-dropdown">
+                        <li class="dropdown-item"><a class="grey-text text-darken-1" href="#!" data-language="en"><i class="flag-icon flag-icon-in"></i>India</a></li>
+                    </ul>
+
+                    <!-- notifications-dropdown-->
+                    <ul class="dropdown-content" id="notificationsdropdown" runat="server" style="width: 200px; height: 450px; padding: 10px; border: 1px solid silver;"></ul>
+
+                    <!-- profile-dropdown-->
+                    <div class="dropdown-content" id="profile-dropdown" style="left: 883px !important; min-width: 400px !important;">
+                        <div class="row">
+                            <div class="col m7 p-5 mt-3" style="border-right: 2px solid silver;">
+                                <div class="row">
+                                    <div class="col m12 m-0 p-0">
+                                        <h5 class="breadcrumbs-title mt-0 mb-0 center">
+                                            <asp:Label ID="lblUser" runat="server" ClientIDMode="Static" Style="text-transform: capitalize; color: maroon;" Text=""></asp:Label>
+
+                                        </h5>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col m12 m-0 p-0 center-align">
+                                        <img id="imgProfile" runat="server" class="responsive-img circle z-depth-5" width="120" src="images/customer.png" alt="" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col m12 m-0 p-0 center-align">
+                                        <asp:Label ID="lblRoleName" CssClass="blue-grey-text" runat="server" ClientIDMode="Static" Style="text-transform: capitalize;"></asp:Label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col m5 p-0 m-0">
+                                <ul>
+                                    <li><a class="grey-text text-darken-1" href="UserProfile.aspx"><i class="material-icons blue-grey-text">person_outline</i> Profile</a></li>
+                                    <li id="lnkCompProfile" runat="server" clientidmode="static"><a class="grey-text text-darken-1" href="CompanyProfile.aspx"><i class="material-icons blue-grey-text">person_outline</i> Company Profile</a></li>
+                                    <li><a class="grey-text text-darken-1" href="ManageConstant.aspx"><i class="material-icons blue-grey-text">settings</i> Settings</a></li>
+                                    <li class="hide"><a class="grey-text text-darken-1" href="page-faq.html"><i class="material-icons red-text">help_outline</i> Help</a></li>
+                                    <li class="divider blue-grey-text"></li>
+                                    <li><a class="grey-text text-darken-1" href="UserLockScreen.aspx"><i class="material-icons red-text">lock_outline</i> Lock</a></li>
+                                    <li><a class="grey-text text-darken-1" href="javascript:applicationLogOut();"><i class="material-icons red-text">keyboard_tab</i> Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        <div id="divBroadcast" runat="server" clientidmode="Static" class="row mb-0 gradient-45deg-yellow-green" visible="false">
+            <div class="col m12 mb-0 gradient-45deg-yellow-green black-text">
+                <marquee><span id="spnBroadcastMessage" runat="server" clientidmode="Static"></span></marquee>
+            </div>
+        </div>
+    </header>
+    <!-- End of Header Section -->
+
+    <!-- BEGIN: Page Main-->
+    <div id="main" class="main-full">
+        <div class="row">
+            <div class="col s12">
+                <div class="container">
+                    <div class="section">
+                        <form id="form1" runat="server" class="stdform" autocomplete="off">
+                            <asp:HiddenField ID="hdnLastReminderStamp" runat="server" ClientIDMode="Static" />
+                            <asp:HiddenField ID="hdnMasterSerialKey" runat="server" ClientIDMode="Static" />
+                            <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+                            </asp:ContentPlaceHolder>
+                            <asp:Button ID="Button1Master" CssClass="hide" runat="server" Text="Fill Form in Popup" />
+                            <ccm:ModalPopupExtender ID="myModalPopup" BehaviorID="mpeMaster" runat="server" ClientIDMode="Static" PopupControlID="panelMaster" TargetControlID="Button1Master" CancelControlID="Button2Master" BackgroundCssClass="Background">
+                            </ccm:ModalPopupExtender>
+                            <asp:Panel ID="panelMaster" runat="server" ClientIDMode="Static" CssClass="Popup" align="center" Style="display: none; border-radius: 10px; padding-right: 10px !important;">
+                                <div id="myModal">
+                                    <div class="modal-header position-sticky gradient-45deg-light-blue-indigo m-0" style="margin-bottom: 10px !important;">
+                                        <h5 class=" z-depth-5" style="font-size: 2rem !important; font-weight: 800; line-height: 50px; margin: 0; text-align: left; padding-left: 15px;">
+                                            <i class="material-icons prefix">ac_unit</i>
+                                            <span id="spnModuleMasterHeader" runat="server" clientidmode="static">Manage Module</span>
+                                            <span id="spnModuleHeader" runat="server" clientidmode="static">Manage Module</span>                                            
+                                            <asp:Button CssClass="btnTopRightCorner float-right" ID="Button2Master" runat="server" Text="" />
+                                        </h5>
+                                    </div>
+                                </div>
+                                <iframe id="ifrModuleMaster" src="about:blank" runat="server" clientidmode="static" scrolling="auto" style="border: 1px solid silver; background-color: transparent; width: 100%; height: 85%; padding: 5px;"></iframe>
+                                <br />
+                            </asp:Panel>
+                        </form>
+                    </div>
+                    <!-- START RIGHT SIDEBAR NAV -->
+                    <aside id="right-sidebar-nav">
+                        <div id="slide-out-right" class="slide-out-right-sidenav sidenav rightside-navigation" style="min-width: 400px !important;">
+                            <div class="row">
+                                <div class="slide-out-right-title">
+                                    <div class="col s12 border-bottom-1 pb-0 pt-1">
+                                        <div class="row">
+                                            <div class="col s2 pr-0 center">
+                                                <i class="material-icons vertical-text-middle"><a href="#" class="sidenav-close">clear</a></i>
+                                            </div>
+                                            <div class="col s10 pl-0">
+                                                <ul class="tabs">
+                                                    <li class="tab col s4 p-0 hide">
+                                                        <a href="#messages"><span>Messages</span></a>
+                                                    </li>
+                                                    <li class="tab col s4 p-0">
+                                                        <a href="#settings" class="active"><span>Settings</span></a>
+                                                    </li>
+                                                    <li class="tab col s4 p-0">
+                                                        <a href="#activity"><span>Activity</span></a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slide-out-right-body row pl-3">
+                                    <div id="messages" class="col m12 pb-0">
+                                        <div class="collection border-none mb-0">
+                                            <%--                                            <asp:Repeater ID="rptMasterUserList" runat="server" ClientIDMode="Static">
+                                            <ItemTemplate>
+                                                <a href="javascript:openChatBox();" title="Open Chat" style="line-height:25px;">
+                                                <div id="divUser" name='<%# string.Format("div{0}", Eval("UserID")) %>' class="chat-user">
+                                                    <div class="user-section">
+                                                        <div class="row mt-2" style="border-bottom:2px ridge silver;">
+                                                            <div class="col m7 ml-1">
+                                                                <p class="m-0 blue-grey-text text-darken-4 font-weight-700 text-capitalize"><%#Eval("EmployeeName") %></p>
+                                                                <p class="m-0 info-text text-capitalize "><%#Eval("RoleCode") %></p>
+                                                            </div>
+                                                            <div class="col m4">
+                                                                <p class="m-0 right-align medium-small width-100"><%#Eval("LastTimestamp", "{0:dd/MM HH:mm}") %></p>
+                                                                <span id="spnUnread" runat="server" class="badge pill red float-right  width-100" style="margin:0px !important;"><%#Eval("UnreadMessageCount") %></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                </a>
+                                            </ItemTemplate>
+                                            </asp:Repeater> --%>
+                                        </div>
+                                    </div>
+                                    <div id="settings" class="col s12">
+                                        <p class="setting-header mt-8 mb-3 ml-5 font-weight-900">GENERAL SETTINGS</p>
+                                        <ul class="collection border-none">
+                                            <li class="collection-item border-none">
+                                                <div class="m-0">
+                                                    <span>Notifications</span>
+                                                    <div class="switch right">
+                                                        <label>
+                                                            <input checked type="checkbox" />
+                                                            <span class="lever"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                        <p class="setting-header mt-7 mb-3 ml-5 font-weight-900">SYSTEM SETTINGS</p>
+                                        <ul class="collection border-none">
+                                            <li class="collection-item border-none">
+                                                <div class="m-0">
+                                                    <span>System Logs</span>
+                                                    <div class="switch right">
+                                                        <label>
+                                                            <input type="checkbox" />
+                                                            <span class="lever"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div id="activity" class="col s12">
+                                        <div class="activity" style="height: 550px; overflow-y: auto;">
+                                            <ul id="ulActivitySection" runat="server" class="widget-timeline mb-0"></ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                    <!-- END RIGHT SIDEBAR NAV -->
+                </div>
+                <div class="content-overlay"></div>
+            </div>
+        </div>
+    </div>
+    <!-- END: Page Main-->
+    <div id="intromodal" class="modal">
+        <div class="modal-content">
+            <h4>Reminder</h4>
+            <ul id="ulintroReminder" runat="server" class="widget-timeline mb-0"></ul>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+    </div>
+
+    <div style="bottom: 100px; right: 0px;" class="fixed-action-btn direction-top active"><a class="btn-floating btn-large gradient-45deg-light-blue-cyan gradient-shadow"><i class="material-icons">add</i></a>
+        <ul>
+            <li>
+                <a href="GeneralMaster.aspx?currtab=customer" class="btn-floating green" style="opacity: 1; transform: scale(1) translateY(0px) translateX(0px);">
+                    <img alt="" src="images/customer.png" height="40" width="40" title="Add Customer" style="border-radius:50%;">
+                </a>
+            </li>
+            <li>
+                <a href="GeneralMaster.aspx?currtab=products" class="btn-floating amber" style="opacity: 1; transform: scale(1) translateY(0px) translateX(0px);">
+                    <img alt="" src="images/purchase.png" height="40" width="40" title="Add Product" style="border-radius:50%;">
+                </a>
+            </li>
+            <li class="hide"><a href="javascript:sendQuickEmail();" class="btn-floating red" style="opacity: 1; transform: scale(1) translateY(0px) translateX(0px);"><i class="material-icons">mail_outline</i></a></li>
+        </ul>
+    </div>
+
+    <%--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*---%>
+    <!-- >>>>>> Settings Panel - Summary : Right SideBar: Control-1   data-target="theme-cutomizer-out"  -->
+    <%--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*---%>
+    <a data-target="theme-cutomizer-out-summary" href="javascript:openDashboardDailySummary();" class="btn btn-customizer pink accent-2 white-text theme-cutomizer-trigger" style="top:30%; padding: 0 0.4rem !important;">
+        <i class="material-icons">search</i>
+    </a>
+    <div id="theme-cutomizer-out-summary" class="theme-cutomizer sidenav row" style="z-index: 999; top: 70px; width: 100%; height:100%;">
+        <div class="row">
+            <div class="col m12">
+                <a class="sidenav-close" href="#!"><i class="material-icons">close</i></a>
+                <h3 class="theme-cutomizer-title">Things To Watch</h3>
+                <hr class="customize-devider" />
+            </div>
+        </div>
+        <div class="row">
+            <div id="ifrDivSummary" class="col m12"></div>
+        </div>
+    </div>
+
+    <%--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*---%>
+    <!-- >>>>>> Settings Panel - Reports : Right SideBar: Control-1   data-target="theme-cutomizer-out"  -->
+    <%--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*---%>
+    <a data-target="theme-cutomizer-out" href="javascript:void(0);" class="btn btn-customizer pink accent-2 white-text sidenav-trigger theme-cutomizer-trigger" style="padding: 0 0.4rem !important;">
+        <i class="material-icons">settings</i>
+    </a>
+    <div id="theme-cutomizer-out" class="theme-cutomizer sidenav row" style="z-index: 999; top: 85px; width: 98%;">
+        <div class="row col m12">
+            <a class="sidenav-close" href="#!"><i class="material-icons">close</i></a>
+            <h3 class="theme-cutomizer-title">Reports</h3>
+            <hr class="customize-devider" />
+        </div>
+
+        <div class="row" style="top: 0px; width: 98%; overflow: scroll; height: 450px;">
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead1" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Master Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel1" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead2" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Lead Management<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel2" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead3" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Office Management Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel3" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead4" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Support Management Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel4" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead5" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Human Resource Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel5" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead6" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Accounts Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel6" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead7" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Inventory Reports<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel7" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col m12 pl-1 pr-0">
+                <div class="card user-statistics-card animate fadeLeft mt-0">
+                    <div class="card-content p-0">
+                        <h5 id="mreppanelHead8" runat="server" clientidmode="static" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow" style="display: none;">&nbsp;Fleet Management<i class="material-icons float-left">ac_unit</i></h5>
+                        <div id="mreppanel8" runat="server" clientidmode="static" class="user-statistics-container" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%-->>>>> Menu Replace at New Place--%>
+    <div id="theme-cutomizer-out1" class="theme-cutomizer sidenav row" style="z-index: 999; top: 75px; width: 98%; height:85%; border:10px ridge navy;">
+        <div style="margin: 0px;">
+            <div style="background-color: white; width: 11%; height: 600px; text-align: center; margin: 0px; padding: 0px; float: left; border-radius: 8px;">
+                <h5 id="mpanelHead1" runat="server" style="display: none;" class="card-title mb-0 center-align width-100 gradient-45deg-light-blue-indigo">Dashboard</h5>
+                <div id="mpanel1" runat="server" style="display: none; margin-left:25px;">
+                </div>
+
+                <h5 class="card-title mb-0 float-left center-align width-100 gradient-45deg-light-blue-indigo">Masters</h5>
+                <div id="pgGeneralMaster" runat="server" class="navbox-tiles" style="border-radius: 8px; margin-left:30px;">
+                    <a href="GeneralMaster.aspx" class="tile">
+                        <div class="icon">
+                            <img alt="" src="images/timeline3.png" height="40" width="40" title="Dashboard" />
+                        </div>
+                        <span class="title">General Masters</span>
+                    </a>
+                </div>
+            </div>
+            <div style="background-color: white; width: 77%; height: 600px; margin: 0px 5px; float: left; overflow-x: hidden; overflow-y: auto;">
+                <div class="row mt-0">
+                    <div class="col m12 pl-0 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead2" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Lead Management<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel2" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row  mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead3" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Office Management<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel3" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row  mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead5" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Support Management<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel5" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead6" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Human Resource<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel6" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead9" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Purchase<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel9" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead10" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Sales<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel10" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead11" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Production<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel11" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead4" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Accounts<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel4" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col m12 pl-1 pr-0">
+                        <div class="card user-statistics-card animate fadeLeft mt-0">
+                            <div class="card-content p-0">
+                                <h5 id="mpanelHead7" runat="server" style="display: none;" class="card-title mb-0 float-left left-align width-100 gradient-45deg-indigo-light-blue white-text text-shadow">&nbsp;Manage Users & Privileges<i class="material-icons float-left">ac_unit</i></h5>
+                                <div id="mpanel7" runat="server" class="user-statistics-container" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="background-color: white; width:11%; height: 600px; margin: 0px; float: left; border-radius: 8px;">
+                <h5 id="mpanelHead8" runat="server" style="display: none;" class="card-title mb-0 float-left center-align width-100 gradient-45deg-light-blue-indigo">Utility</h5>
+                <div id="mpanel8" runat="server" class="user-statistics-container" style="display: none; margin-left:25px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BEGIN : Footer-->
+    <footer id="sticky" class="page-footer footer-dark gradient-45deg-indigo-purple gradient-shadow navbar-border navbar-shadow pl-0">
+        <div class="row">
+            <div class="col m3 left">
+                <div class="footer-copyright">
+                    <div class="container">
+                        <span class="left hide-on-small-only">Licensed To : <a id="ltrLocationName" runat="server" clientidmode="Static" href="#"></a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col m5">
+                <div style="text-align: center;">
+                    <div id="navigation-bar" class="navigation-bar padding-1 cetner-align" style="background-color: white; border-radius: 8px; margin: 5px 0 5px 0;">
+                        <div id="navigationbaricons" runat="server"></div>
+
+                        <%-----------------------------------------------------%>
+                        <%--Menu Section--%>
+                        <%-----------------------------------------------------%>
+                        <%--<div class="navbox box-shadow" style="background-color: #899bb7; padding-top: 15px !important; padding-left: 15px !important;">--%>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col m4 right">
+                <div class="footer-copyright">
+                    <div id="showSharvaya" class="container" style="text-align: right;">Design and Developed by SHARVAYA INFOTECH</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="Sharvayacontent" class="hide">
+        <div class="container emp-profile" style="padding: 50px 10px;">
+            <div class="row">
+                <div class="col m12">
+                    <%--Company Profile--%>
+                    <div class="row card padding-1 border-radius-8 mt-5">
+                        <div class="col m12 p-0">
+                            <div class="row">
+                                <div class="col m4 mt-1">
+                                    <img src="images/CompanyLogo/Sharvaya_Logo.png" alt="" width="280" height="140" />
+                                </div>
+                                <div class="col m4">
+                                    <div class="card-content">
+                                        <h5>Office Address</h5>
+                                        <p class="m-0 p-0">E-803, Titanium City Center,</p>
+                                        <p class="m-0 p-0">100 Ft. Road, Satellite, Nr.Sachin Tower,</p>
+                                        <p class="m-0 p-0">Ahmedabad-380015</p>
+                                        <p class="m-0 p-0">Gujarat, India</p>
+                                    </div>
+                                </div>
+                                <div class="col m4">
+                                    <div class="card-content">
+                                        <h5>Contact Us</h5>
+                                        <p>http://sharvayainfotech.com</p>
+                                        <p class="mb-0">Contact #1: +91-79-40397060<br />
+                                            Contact #2: +91-9099988301</p>
+                                        <p>Support Email   : <b>support@sharvayainfotech.com</b><br />
+                                            Office Timmings : <b>9:00 AM to 6:30 PM</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <%--Client Profile & License Information--%>
+                    <div class="row card padding-1 border-radius-8">
+                        <div class="col m12 p-0">
+                            <div class="row">
+                                <div class="col m4">
+                                    <img src="images/companylogo/companylogo.png" alt="" width="250" height="150" />
+                                </div>
+                                <div class="col m8">
+                                    <%--Client's License Information  --%>
+                                    <div class="row padding-1 card glow" style="margin-right: 10px;">
+                                        <div class="col m12">
+                                            <div class="card-header" style="margin-bottom: 30px !important;">
+                                                <h5 class="card-title mb-0 left gradient-45deg-light-blue-indigo width-100">
+                                                    <asp:Label ID="Label1" runat="server" TabIndex="1" Width="100%" Style="display: inline; text-align: left;" Text="Contract License Information : "></asp:Label>
+                                                    <asp:Label ID="txtSerialKey" runat="server" TabIndex="1" Width="100%" Style="display: inline; text-align: right; color: yellow;"></asp:Label>
+                                                </h5>
+                                            </div>
+                                            <hr />
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col m6">
+                                                        <label class="active badge badge-info" for="txtInstallationDate" style="font-size: 14px;">Installation Date</label>
+                                                        <asp:Label ID="txtInstallationDate" runat="server" class="control-label" TabIndex="1" Style="font-size: 14px;"></asp:Label>
+                                                    </div>
+                                                    <div class="col m6">
+                                                        <label class="active badge badge-info" for="txtExpiryDate" style="font-size: 14px;">License Expiry Date</label>
+                                                        <asp:Label ID="txtExpiryDate" runat="server" class="control-label" TabIndex="1" Style="font-size: 14px;"></asp:Label><br />
+                                                        <small style="font-size: 10px; color: navy; font-style: italic;">(No Further Updation/Features you will receive after mentioned date)</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col m6">
+                                                        <label class="active badge badge-info" for="txtLicenseUsers" style="font-size: 14px;">Licensed Users</label>
+                                                        <asp:Label ID="txtLicenseUsers" runat="server" class="control-label" TabIndex="1" Style="font-size: 14px;"></asp:Label>
+                                                    </div>
+                                                    <div class="col m6">
+                                                        <label class="active badge badge-info" for="txtExistingUsers" style="font-size: 14px;">Application Users</label>
+                                                        <asp:Label ID="txtExistingUsers" runat="server" class="control-label" TabIndex="1" Style="font-size: 14px;"></asp:Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- END: Footer-->
+    <script src="app-assets/js/vendors.min.js"></script>
+    <script src="app-assets/vendors/data-tables/js/jquery.dataTables.min.js"></script>
+    <script src="app-assets/vendors/data-tables/extensions/responsive/js/dataTables.responsive.min.js"></script>
+    <script src="app-assets/js/plugins.js"></script>
+    <%--    <script src="app-assets/js/custom/custom-script.js"></script>--%>
+    <script type="text/javascript" src="plugins/daterangepicker/moment.js"></script>
+    <script type="text/javascript" src="app-assets/vendors/sweetalert/sweetalert.min.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var x = window.localStorage.getItem("LastReminderStamp");
+            if (x == null || x == "") {
+                window.localStorage.setItem("LastReminderStamp", new Date());
+            }
+            // ---------------------------------------------------------------
+            buildBottomWidgets();
+            // ---------------------------------------------------------------
+            hideOpenPopupReport();
+            $('.tooltipped').tooltip();
+        });
+        // -------------------------------------------------------------------
+        function applicationLogOut() {
+            swal({
+                title: "Daily Report Notification",
+                text: "Send To Email Address",
+                //icon: "info", dangerMode: true,
+                content: 'input',
+                closeOnClickOutside: false, closeOnEsc: false,
+                buttons: {
+                    cancel: { text: 'No, Please LogOut', className: 'gradient-45deg-yellow-green', visible: true },
+                    confirm: { text: 'Yes, Please', className: 'gradient-45deg-purple-deep-orange', visible: true }
+                }
+            }).then(function (isConfirm) {
+                if (isConfirm) {
+                    debugger;
+                    var tmpEmail = $('.swal-content__input').val();
+                    jQuery.ajax({
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        url: "Services/DashboardService.asmx/SendDailyReport",
+                        data: '{ToEmailAddress:\'' + tmpEmail + '\'}',
+                        success: function (response) {
+                            debugger;
+                            swal({ title: "Message", text: response.d, icon: 'success' });
+                        },
+                        error: function (r) { alert('Error : ' + r.responseText); },
+                        failure: function (r) { alert('failure'); }
+                    });
+                }
+                else {
+                    window.location.href = "../Default.aspx";
+                }
+            });
+        }
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        // Section : DailySummary 
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        $('.sidenav-close').click(function () {
+            $('#theme-cutomizer-out-summary').css({ 'transform': 'translateX(-100%)' });
+            $('#ifrDivSummary').html('');
+        })
+
+        function openDashboardDailySummary() {
+            //alert('open summary')
+            var current_pull = parseInt($('#theme-cutomizer-out-summary').css('transform').split(',')[5]);
+            $('#theme-cutomizer-out-summary').css({ 'transform': 'translateX(0%)' });
+            if (!$('#ifrModuleDailyNew').length) {
+                $('#ifrDivSummary').html('<iframe id="ifrModuleDailyNew" src="DashboardDailySummary.aspx" runat="server" clientidmode="static" style="overflow-x:hidden; z-index: 999; top: 70px; width: 100%; height:800px;"></iframe>');
+            }
+            //<iframe id="ifrModuleDaily" src="DashboardDailySummary.aspx" runat="server" clientidmode="static" style="overflow-x:hidden; z-index: 999; top: 70px; width: 100%; height:800px;"></iframe>
+        }
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        function PopupCenter(url, title, w, h) {
+            // Fixes dual-screen position                         Most browsers      Firefox  
+            var dualScreenLeft = window.screenLeft != undefined ? window.screenLeft : screen.left;
+            var dualScreenTop = window.screenTop != undefined ? window.screenTop : screen.top;
+
+            width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+            height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+            var left = ((width / 2) - (w / 2)) + dualScreenLeft;
+            var top = ((height / 2) - (h / 2)) + dualScreenTop;
+            var newWindow = window.open(url, title, 'scrollbars=yes, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
+
+            // Puts focus on the newWindow  
+            if (window.focus) {
+                newWindow.focus();
+            }
+        }
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        (function () {
+            jQuery('#navbox-trigger').click(function () {
+                jQuery('#Sharvayacontent').removeClass('popupsticky').addClass('hide');
+                // -----------------------------------------------------------------------------------
+                return jQuery('#navigation-bar').toggleClass('navbox-open');
+            });
+            return jQuery(document).on('click', function (e) {
+                var $target;
+                $target = jQuery(e.target);
+                if (!$target.closest('.navbox').length && !$target.closest('#navbox-trigger').length) {
+                    return jQuery('#navigation-bar').removeClass('navbox-open');
+                }
+            });
+        }.call(this));
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        (function () {
+            jQuery('#showSharvaya').click(function () {
+                jQuery('#navigation-bar').removeClass('navbox-open');
+                if ($("#Sharvayacontent").hasClass("hide"))
+                    return jQuery('#Sharvayacontent').removeClass('hide').addClass('popupsticky');
+                else
+                    return jQuery('#Sharvayacontent').removeClass('popupsticky').addClass('hide');
+            });
+            jQuery(document).on('click', function (e) {
+                //alert('doc clicked')
+                //if ($("#Sharvayacontent").hasClass("hide"))
+                //    return jQuery('#Sharvayacontent').removeClass('hide').addClass('popupsticky');
+                //else 
+                //    return jQuery('#Sharvayacontent').removeClass('popupsticky').addClass('hide');
+            });
+        }.call(this));
+        // *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        window.setInterval(showReminderMsg, 10000);
+    </script>
+</body>
+</html>

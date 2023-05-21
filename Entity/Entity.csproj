@@ -1,0 +1,208 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{E3D82B43-6804-4E48-B983-5410B6BC3E43}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Entity</RootNamespace>
+    <AssemblyName>Entity</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CrystalDecisions.CrystalReports.Engine, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Web.XmlTransform">
+      <HintPath>..\packages\Microsoft.Web.Xdt.2.1.2\lib\net40\Microsoft.Web.XmlTransform.dll</HintPath>
+    </Reference>
+    <Reference Include="NuGet.Core, Version=2.14.0.832, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NuGet.Core.2.14.0\lib\net40-Client\NuGet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AccountLedger.cs" />
+    <Compile Include="Activity.cs" />
+    <Compile Include="ApplicationMenu.cs" />
+    <Compile Include="Attendance.cs" />
+    <Compile Include="AudioFiles.cs" />
+    <Compile Include="Authenticate.cs" />
+    <Compile Include="BackupDetail.cs" />
+    <Compile Include="BankVoucher.cs" />
+    <Compile Include="BroadCastMessage.cs" />
+    <Compile Include="Bundle.cs" />
+    <Compile Include="CheckList.cs" />
+    <Compile Include="City.cs" />
+    <Compile Include="CommonParameters.cs" />
+    <Compile Include="Branch.cs" />
+    <Compile Include="CompanyProfile.cs" />
+    <Compile Include="CompanyRegistration.cs" />
+    <Compile Include="Complaint.cs" />
+    <Compile Include="Constant.cs" />
+    <Compile Include="Contents.cs" />
+    <Compile Include="ContractInfo.cs" />
+    <Compile Include="Country.cs" />
+    <Compile Include="CourierInfo.cs" />
+    <Compile Include="Currency.cs" />
+    <Compile Include="Customer.cs" />
+    <Compile Include="CustomerCategory.cs" />
+    <Compile Include="CustomerContacts.cs" />
+    <Compile Include="CustomerPriceList.cs" />
+    <Compile Include="CustomerProducts.cs" />
+    <Compile Include="DailyActivity.cs" />
+    <Compile Include="DBCRNote.cs" />
+    <Compile Include="DocPrinterSettings.cs" />
+    <Compile Include="Documents.cs" />
+    <Compile Include="Document_Type.cs" />
+    <Compile Include="Expense.cs" />
+    <Compile Include="ExternalLeads.cs" />
+    <Compile Include="Feedback.cs" />
+    <Compile Include="FinancialTrans.cs" />
+    <Compile Include="Followup.cs" />
+    <Compile Include="Holiday.cs" />
+    <Compile Include="InquiryInfo.cs" />
+    <Compile Include="InquiryStatus.cs" />
+    <Compile Include="Designation.cs" />
+    <Compile Include="EmailTemplate.cs" />
+    <Compile Include="InspectionInfo.cs" />
+    <Compile Include="InternalWorkOrder.cs" />
+    <Compile Include="Inward.cs" />
+    <Compile Include="InwardDetail.cs" />
+    <Compile Include="JobCard.cs" />
+    <Compile Include="JobCardInward.cs" />
+    <Compile Include="JobCardOutward.cs" />
+    <Compile Include="JobWork_Movement.cs" />
+    <Compile Include="JournalVoucher.cs" />
+    <Compile Include="LeaveRequest.cs" />
+    <Compile Include="Loan.cs" />
+    <Compile Include="MailBox.cs" />
+    <Compile Include="ExpenseType.cs" />
+    <Compile Include="MaterialIndent.cs" />
+    <Compile Include="Material_Movement.cs" />
+    <Compile Include="Molding.cs" />
+    <Compile Include="NatureCall.cs" />
+    <Compile Include="NotificationUtility.cs" />
+    <Compile Include="OrganizationBank.cs" />
+    <Compile Include="OrganizationBankInfo.cs" />
+    <Compile Include="OrganizationEmployee.cs" />
+    <Compile Include="OrganizationStructure.cs" />
+    <Compile Include="OrgChart.cs" />
+    <Compile Include="OrgDepartment.cs" />
+    <Compile Include="OrgGroup.cs" />
+    <Compile Include="OrgType.cs" />
+    <Compile Include="OtherCharge.cs" />
+    <Compile Include="Outward.cs" />
+    <Compile Include="OverTime.cs" />
+    <Compile Include="PatientPayment.cs" />
+    <Compile Include="Payroll.cs" />
+    <Compile Include="PriceList.cs" />
+    <Compile Include="PrintDocument.cs" />
+    <Compile Include="ProductGroup.cs" />
+    <Compile Include="Production.cs" />
+    <Compile Include="Products.cs" />
+    <Compile Include="ProductSpecification.cs" />
+    <Compile Include="Projects.cs" />
+    <Compile Include="Proof.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PurchaseBill.cs" />
+    <Compile Include="PurchaseBillDetail.cs" />
+    <Compile Include="PurchaseOrder.cs" />
+    <Compile Include="PurchaseOrderDetail.cs" />
+    <Compile Include="Quotation.cs" />
+    <Compile Include="QuotationDetail.cs" />
+    <Compile Include="Report.cs" />
+    <Compile Include="Rojmel.cs" />
+    <Compile Include="Roles.cs" />
+    <Compile Include="SalesBill.cs" />
+    <Compile Include="SalesBillDetail.cs" />
+    <Compile Include="SalesChallan.cs" />
+    <Compile Include="SalesOrder.cs" />
+    <Compile Include="SalesOrderDealer.cs" />
+    <Compile Include="SalesOrderDealerDetail.cs" />
+    <Compile Include="SalesOrderDetail.cs" />
+    <Compile Include="SalesTarget.cs" />
+    <Compile Include="ScriptGenerator.cs" />
+    <Compile Include="SiteSurvay.cs" />
+    <Compile Include="SiteSurveyReport.cs" />
+    <Compile Include="SMS.cs" />
+    <Compile Include="State.cs" />
+    <Compile Include="ToDo.cs" />
+    <Compile Include="ToDoCategory.cs" />
+    <Compile Include="TrialBalanceReport.cs" />
+    <Compile Include="UserLog.cs" />
+    <Compile Include="Users.cs" />
+    <Compile Include="Vehicle.cs" />
+    <Compile Include="VisitAcupanel.cs" />
+    <Compile Include="VisitorInfo.cs" />
+    <Compile Include="Wallet.cs" />
+    <Compile Include="Widget.cs" />
+    <Compile Include="WorkOrderComm.cs" />
+    <Compile Include="ZoneCluster.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

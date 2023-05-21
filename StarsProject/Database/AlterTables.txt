@@ -1,0 +1,171 @@
+﻿Alter table SalesBill_Detail Alter column Rate Decimal(12,2) 
+GO
+Alter Table PurchaseOrder_Detail Add IndentNo NVARCHAR(20) Default NULL
+GO
+Alter Table PurchaseOrder Add ProjectName Nvarchar(50) Default NULL
+GO
+Alter Table Outward_Detail Add ProductSpecification NVARCHAR(MAX) Default NULL
+GO
+ALTER TABLE SalesOrder ADD BankID BIGINT default null
+GO
+Alter Table SalesOrder_Detail Add ProductSpecification Nvarchar(Max) Default null
+GO
+Alter Table PurchaseOrder_Detail Add ProductSpecification NVARCHAR(MAX) Default Null
+Alter Table SalesOrder_Detail Add ProductSpecification Nvarchar(Max) Default null
+ALTER TABLE SalesOrder ADD BankID BIGINT default null
+ALTER TABLE PurchaseBill  ADD TermsCondition NVARCHAR(MAX) DEFAULT NULL
+Alter Table Outward_Detail Add ProductSpecification NVARCHAR(MAX) Default NULL
+Alter Table PurchaseOrder Add ProjectName Nvarchar(50) Default NULL
+ALTER TABLE OrganizationBankInfo ADD BankAccountName NVARCHAR(50) DEFAULT NULL
+Alter Table PurchaseBill Add BillNo NVARCHAR(20) Default Null
+Alter Table Complaint_Detail Add VisitDocument Nvarchar(500) Default null
+Go
+
+-- ============================================================================
+-- By Mrunal ... Date : 27/02/2021 ... 01:41 pm
+-- ============================================================================
+Alter Table Outward Add OrderNo NVARCHAR(20) DEFAULT NULL
+GO
+Alter Table Outward_Detail Add QuantityWeight DECIMAL(12,2) DEFAULT 0
+GO
+Alter Table Outward_Detail Add SerialNo NVARCHAR(30) DEFAULT NULL
+GO
+Alter Table Outward_Detail Add BoxNo NVARCHAR(10) DEFAULT NULL
+GO
+Alter Table Complaint Add ComplaintNo NVARCHAR(20) default NULL
+GO
+Alter Table SalesBill Add BankID BIGINT Default 0
+GO
+Alter Table PurchaseBill Add BankID BIGINT Default 0
+Alter Table Complaint_Detail add VisitDocument nvarchar(500)	
+
+alter table SalesBill add BankID bigint
+
+alter table CourierInfo add CourierImage	nvarchar(500)	
+GO
+ALTER TABLE Salesbill ALTER COLUMN DeliveryNote nvarchar(100);
+GO
+
+-- ============================================================================
+-- By Mrunal ... Date : 10/03/2021 
+-- ============================================================================
+Alter Table Outward Add
+	[ModeOfTransport] [nvarchar](50) NULL,
+	[TransporterName] [nvarchar](100) NULL,
+	[VehicleNo] [nvarchar](50) NULL,
+	[LRNo] [nvarchar](50) NULL,
+	[LRDate] [datetime] NULL,
+	[DCNo] [nvarchar](50) NULL,
+	[DCDate] [datetime] NULL,
+	[DeliveryNote] [nvarchar](100) NULL
+
+Alter table JobCardInward_Detail Add OutwardNo nvarchar(20) default null
+
+-- ============================================================================
+-- By Mrunal ... Date : 13/03/2021 (Night)
+-- ============================================================================
+ALTER TABLE [dbo].[Inward] Add
+	[TaxType] [int] NULL,
+	[BasicAmt] [decimal](12, 2) NULL,
+	[DiscountAmt] [decimal](12, 2) NULL,
+	[SGSTAmt] [decimal](12, 2) NULL,
+	[CGSTAmt] [decimal](12, 2) NULL,
+	[IGSTAmt] [decimal](12, 2) NULL,
+	[ROffAmt] [decimal](12, 2) NULL,
+	[NetAmt] [decimal](12, 2) NULL,
+	[ModeOfTransport] [nvarchar](50) NULL,
+	[TransporterName] [nvarchar](100) NULL,
+	[VehicleNo] [nvarchar](50) NULL,
+	[LRNo] [nvarchar](50) NULL,
+	[LRDate] [datetime] NULL,
+	[TransportRemark] [nvarchar](150) NULL
+
+ALTER TABLE [dbo].[Inward_Detail] Add
+	[DiscountAmt] [decimal](12, 2) NULL,
+	[SGSTPer] [decimal](12, 2) NULL,
+	[SGSTAmt] [decimal](12, 2) NULL,
+	[CGSTPer] [decimal](12, 2) NULL,
+	[CGSTAmt] [decimal](12, 2) NULL,
+	[IGSTPer] [decimal](12, 2) NULL,
+	[IGSTAmt] [decimal](12, 2) NULL,
+	[NetAmt] [decimal](12, 2) NULL,
+	[OrderNo] [nvarchar](20) NULL
+
+ALTER TABLE [dbo].[Outward_Detail]  Add	[OrderNo] [nvarchar](20) NULL
+Alter Table PurchaseOrder_Detail Add DeliveryDate DateTime Default Null
+
+Alter table PurchaseOrder 
+Add DeliveryNote Nvarchar(500) default null
+
+Alter Table SalesOrder_Detail Add DeliveryDate DateTime Default Null
+
+Alter Table JobCardInward  Add LocationID BIGINT DEFAULT NULL
+Alter Table JobCardInward_Detail  Add LocationID BIGINT DEFAULT NULL
+Alter Table JobCardOutward  Add LocationID BIGINT DEFAULT NULL
+Alter Table JobCardOutward_Detail  Add LocationID BIGINT DEFAULT NULL
+Alter Table Material_Movement  Add LocationID BIGINT DEFAULT NULL
+Alter Table Material_MovementDetail  Add LocationID BIGINT DEFAULT NULL
+
+Alter Table PurchaseBill Add LocationID BIGINT DEFAULT NULL
+Alter Table PurchaseOrder_Detail Add LocationID BIGINT DEFAULT NULL
+Alter Table PurchaseOrder_Detail Add DeliveryDate DateTime DEFAULT NULL
+Alter Table SalesBill Add LocationID BIGINT DEFAULT NULL
+Alter Table SalesBill_Detail Add LocationID BIGINT DEFAULT NULL
+Alter Table Inward  Add LocationID BIGINT DEFAULT NULL
+Alter Table Inward_Detail  Add LocationID BIGINT DEFAULT NULL
+Alter Table Outward Add LocationID BIGINT DEFAULT NULL
+Alter Table Outward_Detail Add LocationID BIGINT DEFAULT NULL
+
+Alter Table SalesBill_Detail Add ProductSpecification NVARCHAR(MAX) Default NULL
+GO
+ALTER TABLE Purchase_Detail ALTER COLUMN Rate decimal(12,2)
+GO
+ALTER TABLE SalesBill_Detail ADD UnitQty decimal(12,2) Default 0
+GO
+ALTER TABLE SalesOrder_Detail ADD UnitQty decimal(12,2) Default 0
+GO
+ALTER TABLE Quotation_Detail ADD UnitQty decimal(12,2) Default 0
+GO
+Alter Table PAYROLL Alter Column PDays Decimal(12,2)
+GO
+Alter Table PAYROLL Alter Column LDays Decimal(12,2)
+GO
+Alter Table PAYROLL Alter Column HDays Decimal(12,2)
+GO
+Alter Table SalesBill ADD DeliverTo NVARCHAR(50) DEFAULT NULL
+GO
+Alter Table PurchaseOrder Alter Column ApprovalStatus Nvarchar(50)
+GO
+alter table PurchaseOrder Add BuyerRef nvarchar(50) default null
+GO
+Alter Table DBCRNote Add InvoiceNo Nvarchar(20) Default NULL
+Alter Table DBCRNote Add BasicAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add DiscountAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add SGSTAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add CGSTAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add IGSTAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add ROffAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeID1 BIGINT Default 0
+Alter Table DBCRNote Add ChargeAmt1 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeID2 BIGINT Default 0
+Alter Table DBCRNote Add ChargeAmt2 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeID3 BIGINT Default 0
+Alter Table DBCRNote Add ChargeAmt3 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeID4 BIGINT Default 0
+Alter Table DBCRNote Add ChargeAmt4 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeID5 BIGINT Default 0
+Alter Table DBCRNote Add ChargeAmt5 Decimal(12,2) Default 0
+Alter Table DBCRNote Add NetAmt Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeBasicAmt1 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeBasicAmt2 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeBasicAmt3 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeBasicAmt4 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeBasicAmt5 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeGSTAmt1 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeGSTAmt2 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeGSTAmt3 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeGSTAmt4 Decimal(12,2) Default 0
+Alter Table DBCRNote Add ChargeGSTAmt5 Decimal(12,2) Default 0
+
+alter table SalesOrder Add ReferenceDate DateTime Default NULL
+Alter Table Complaint Add ComplaintType NVARCHAR(20) Default null

@@ -1,0 +1,1 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="FileResponse.aspx.cs" Inherits="StarsProject.FileResponse" %>

@@ -1,0 +1,227 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--For more information on how to configure your ASP.NET application, please visit http://go.microsoft.com/fwlink/?LinkId=169433 -->
+<configuration>
+  <configSections>
+    <sectionGroup name="system.web">
+      <section name="sanitizer" requirePermission="false" type="AjaxControlToolkit.Sanitizer.ProviderSanitizerSection, AjaxControlToolkit" />
+    </sectionGroup>
+    <sectionGroup name="businessObjects">
+      <sectionGroup name="crystalReports">
+        <section name="rptBuildProvider" type="CrystalDecisions.Shared.RptBuildProviderHandler, CrystalDecisions.Shared, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, Custom=null" />
+        <section name="crystalReportViewer" type="System.Configuration.NameValueSectionHandler" />
+      </sectionGroup>
+    </sectionGroup>
+    <section name="ajaxControlToolkit" type="AjaxControlToolkit.AjaxControlToolkitConfigSection, AjaxControlToolkit" />
+  </configSections>
+  <businessObjects>
+    <crystalReports>
+      <rptBuildProvider>
+        <add embedRptInResource="true" />
+      </rptBuildProvider>
+      <crystalReportViewer>
+        <add key="ResourceUri" value="/crystalreportviewers13" />
+      </crystalReportViewer>
+    </crystalReports>
+  </businessObjects>
+  <system.web.extensions>
+       <scripting>
+           <webServices>
+               <jsonSerialization maxJsonLength="819200000"/>  
+           </webServices>
+       </scripting>
+   </system.web.extensions>
+
+  <connectionStrings>
+
+    <!--Direct Connection to AMBICA Live Database-->
+
+    <!--<add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=false;User ID=siregistration;Password=sharvaya@2020$" providerName="System.Data.SqlClient" />
+    <add name="StarsConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=sharvaya_ambica;Persist Security Info=false;User ID=sharvaya_ambica;Password=sharvaya@2020$" providerName="System.Data.SqlClient" />-->
+    
+    <!--Direct Connection to SteelMan Live Database-->
+    <!--<add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=false;User ID=siregistration;Password=sharvaya@2020$" providerName="System.Data.SqlClient" />
+    <add name="StarsConnection" connectionString="Data Source=43.252.117.254;Initial Catalog=sharvaya_eofficedesk;Persist Security Info=false;User ID=sa;Password=steelman@123" providerName="System.Data.SqlClient" />-->
+
+    <!--Connection Mrunal Local PC -->
+    <add name="StarsConnection" connectionString="Data Source=DESKTOP-8QA9QFQ;Initial Catalog=Locanix;Persist Security Info=True;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=DESKTOP-8QA9QFQ;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />
+
+    <!--Connection SHARVAYA EOFFICE DESK -->
+    <!--<add name="StarsConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=sharvaya_eofficedesk;Persist Security Info=True;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />-->
+
+    
+    <!--<add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=false;User ID=siregistration;Password=sharvaya@2020$" providerName="System.Data.SqlClient" />
+    <add name="StarsConnection" connectionString="Data Source=43.252.117.254;Initial Catalog=sharvaya_eofficedesk;Persist Security Info=false;User ID=sa;Password=steelman@123" providerName="System.Data.SqlClient" />
+    <add name="BioConnection" connectionString="Data Source=DESKTOP-JKHJMMC\SQLEXPRESS;Initial Catalog=Payatt;Persist Security Info=True;User ID=sa;Password=sioffice" providerName="System.Data.SqlClient" />-->
+
+    <!--<add name="StarsConnection" connectionString="Data Source=DESKTOP-JKHJMMC\SQLEXPRESS;Initial Catalog=sharvaya_steelman;Persist Security Info=True;User ID=sa;Password=sioffice" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=DESKTOP-JKHJMMC\SQLEXPRESS;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=sioffice" providerName="System.Data.SqlClient" />-->
+
+    <!--Connection AMBANI SERVER -->
+    <!--<add name="StarsConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=sharvaya_ambani;Persist Security Info=True;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />-->
+
+    <!--Connection KITCO SERVER -->
+    <!--<add name="StarsConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=sharvaya_kitco;Persist Security Info=True;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />-->
+
+    
+    <!--<add name="StarsConnection" connectionString="Data Source=DESKTOP-JKHJMMC\SQLEXPRESS;Initial Catalog=EagalCrm;Persist Security Info=True;User ID=sa;Password=sioffice" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=DESKTOP-JKHJMMC\SQLEXPRESS;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=sioffice" providerName="System.Data.SqlClient" />-->
+
+    <!--<add name="StarsConnection" connectionString="Data Source=103.92.121.51;Initial Catalog=FieldMaster;Persist Security Info=True;User ID=sa;Password=200#manish" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=208.109.14.134;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=Sharvaya#9898" providerName="System.Data.SqlClient" />-->
+
+    <!--<add name="StarsConnection" connectionString="Data Source=DELL-PC;Initial Catalog=locanix;Persist Security Info=True;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=DELL-PC;Initial Catalog=siregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />-->
+    
+    <!--<add name="StarsConnection" connectionString="Data Source=DESKTOP-4UJ374H\SQL2012;Initial Catalog=locanix;Persist Security Info=True;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />
+    <add name="RegConfigConnection" connectionString="Data Source=DESKTOP-4UJ374H\SQL2012;Initial Catalog=dmregistration;Persist Security Info=False;Persist Security Info=False;User ID=sa;Password=1234" providerName="System.Data.SqlClient" />-->
+
+  </connectionStrings>
+
+  <appSettings>
+    <add key="vs:EnableBrowserLink" value="false" />
+    <add key="LivePath" value="ns.ilabindia.com" />
+    <add key="strsitename" value="ns" />
+    <add key="PageSize" value="5" />
+    <add key="Database" value="DMCRM" />
+    <add key="TODO_Version" value="2" />
+    <add key="CompanyLogoWidth" value="190" />
+    <add key="LoginCompanyLogoWidth" value="80" />
+    <add key="LoginCompanyLogoHeight" value="260" />
+    <add key="MinSearchChar" value="1" />
+    <add key="PrintHeaderLogoWidth" value="210" />
+    <add key="PrintHeaderLogoHeight" value="90" />
+
+    <add key="attServer" value="82.23.1231.22" />
+    <add key="attServer" value="90" />
+    <add key="attUser" value="90" />
+    <add key="attPass" value="90" />
+    
+    <add key="DownloadPath" value="C:\" />
+    <add key="HREmail" value="" />
+    <add key="QAEmail" value="" />
+    <add key="Host" value="" />
+    <add key="EnableSsl" value="false" />
+    <add key="UserName" value="" />
+    <add key="Password" value="" />
+    <add key="Port" value="25" />
+    <add key="CurrencySign" value="Rs" />
+    <add key ="Financial_Year" value="01/04/2020-31/03/2021"/>
+  </appSettings>
+  <system.web>
+    <httpRuntime requestValidationMode="2.0" />
+    <!--		<httpHandlers>
+			<add path="Reserved.ReportViewerWebControl.axd" verb="*" type="Microsoft.Reporting.WebForms.HttpHandler, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" validate="false" />
+    </httpHandlers>
+    -->
+    <compilation debug="true" targetFramework="4.0">
+      <!--<buildProviders>
+				<add extension=".rdlc" type="Microsoft.Reporting.RdlBuildProvider, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+			</buildProviders>-->
+      <assemblies>
+        <!--<add assembly="Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+				<add assembly="Microsoft.ReportViewer.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />-->
+        <add assembly="Microsoft.Build.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="System.Management, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="System.Web.Extensions.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31BF3856AD364E35" />
+        <add assembly="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B77A5C561934E089" />
+      </assemblies>
+    </compilation>
+    <trace enabled="true" pageOutput="false" requestLimit="40" localOnly="false" />
+    <authentication mode="Forms">
+      <forms loginUrl="~/Default.aspx"
+             slidingExpiration="true"
+             timeout="2880" />
+    </authentication>
+    <sessionState timeout="1440"></sessionState>
+    <!--<sessionState mode="InProc" cookieless="true" timeout="60"/>-->
+    <membership>
+      <providers>
+        <clear />
+        <add name="AspNetSqlMembershipProvider" type="System.Web.Security.SqlMembershipProvider" connectionStringName="ApplicationServices" enablePasswordRetrieval="false" enablePasswordReset="true" requiresQuestionAndAnswer="false" requiresUniqueEmail="false" maxInvalidPasswordAttempts="5" minRequiredPasswordLength="6" minRequiredNonalphanumericCharacters="0" passwordAttemptWindow="10" applicationName="/" />
+      </providers>
+    </membership>
+    <profile>
+      <providers>
+        <clear />
+        <add name="AspNetSqlProfileProvider" type="System.Web.Profile.SqlProfileProvider" connectionStringName="ApplicationServices" applicationName="/" />
+      </providers>
+    </profile>
+    <roleManager enabled="false">
+      <providers>
+        <clear />
+        <add name="AspNetSqlRoleProvider" type="System.Web.Security.SqlRoleProvider" connectionStringName="ApplicationServices" applicationName="/" />
+        <add name="AspNetWindowsTokenRoleProvider" type="System.Web.Security.WindowsTokenRoleProvider" applicationName="/" />
+      </providers>
+    </roleManager>
+    <!--<sanitizer defaultProvider="AntiXssSanitizerProvider">
+      <providers>
+        <add name="AntiXssSanitizerProvider" type="AjaxControlToolkit.Sanitizer.AntiXssSanitizerProvider" ></add>
+      </providers>
+    </sanitizer>-->
+    <webServices>
+      <protocols>
+        <add name="HttpGet" />
+
+      </protocols>
+    </webServices>
+    <pages>
+      <controls>
+        <add tagPrefix="ajaxToolkit" assembly="AjaxControlToolkit" namespace="AjaxControlToolkit" />
+      </controls>
+    </pages>
+    <customErrors mode="Off" />
+    <!--customErrors>
+      <error redirect="../UnderConstruction.aspx" statusCode="500" />      
+    </customErrors-->
+  </system.web>
+  <system.webServer>
+    <modules runAllManagedModulesForAllRequests="true" />
+    <validation validateIntegratedModeConfiguration="false" />
+    <handlers>
+      <add name="ReportViewerWebControlHandler" preCondition="integratedMode" verb="*" path="Reserved.ReportViewerWebControl.axd" type="Microsoft.Reporting.WebForms.HttpHandler, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+      <add name="CrystalImageHandler" verb="GET" path="CrystalImageHandler.aspx" type="CrystalDecisions.Web.CrystalImageHandler, CrystalDecisions.Web,Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" />
+    </handlers>
+    <staticContent>
+      <remove fileExtension=".woff2" />
+      <mimeMap fileExtension=".woff2" mimeType="font/woff2" />
+      <remove fileExtension=".bak" />
+      <mimeMap fileExtension=".bak" mimeType="application/octet-stream" />
+      <remove fileExtension=".json" />
+      <mimeMap fileExtension=".json" mimeType="application/json" />
+    </staticContent>
+  </system.webServer>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <!--<dependentAssembly>
+        <assemblyIdentity name="HtmlAgilityPack" publicKeyToken="bd319b19eaf3b43a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-1.4.9.5" newVersion="1.4.9.5" />
+      </dependentAssembly>-->
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.Web.XmlTransform" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-15.0.0.0" newVersion="15.0.0.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="AjaxControlToolkit" publicKeyToken="28f01b0e84b6d53e" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-4.1.7.1213" newVersion="4.1.7.1213" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="HtmlAgilityPack" publicKeyToken="bd319b19eaf3b43a" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-1.4.9.5" newVersion="1.4.9.5" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="CrystalDecisions.ReportAppServer.DataSetConversion" publicKeyToken="692fbea5521e1304" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-13.0.2000.0" newVersion="13.0.2000.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="CrystalDecisions.Shared" publicKeyToken="692fbea5521e1304" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-13.0.2000.0" newVersion="13.0.2000.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+  <ajaxControlToolkit htmlSanitizer="AjaxControlToolkit.HtmlEditor.Sanitizer.DefaultHtmlSanitizer, AjaxControlToolkit.HtmlEditor.Sanitizer" />
+</configuration>

@@ -1,0 +1,9 @@
+SCC = This is a Source Code Control file
+
+[MYCRM.sln]
+SCC_Aux_Path = "\\si-server\vss"
+SCC_Project_Name = "$/MYCRM", MXQEAAAA
+
+[ServicedeskERP.sln]
+SCC_Aux_Path = "\\SI-SUPPORT\Visual basics\MYCRM"
+SCC_Project_Name = "$/ServicedeskERP", WPODAAAA

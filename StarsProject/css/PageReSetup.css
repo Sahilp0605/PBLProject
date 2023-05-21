@@ -1,0 +1,143 @@
+﻿.usermsg{text-align:center; font-family:Verdana; font-size:14px; text-align:center; color:Red; padding:5px 0px; display:block !important;}
+        
+#basicform { margin-top: 60px; border: 5px double Gray; }
+
+#pageGrid { background-color: Silver;}
+
+.stdtable th, .stdtable td { line-height: 18px; vertical-align: middle; color: #333; }
+.stdtable thead th, .stdtable thead td { font-size:13px; padding: 5px 5px; border: 1px solid silver; border-bottom: 1px solid gray; text-align: left; }
+        
+.stdtable thead th {background:#b5cfd2 url('/images/cell-blue.jpg'); Color: Navy;}
+.stdtable thead td { font-weight: bold;}
+.stdtable tbody tr td { padding: 3px 5px; border-right: 1px solid #eee; border-bottom: 1px solid #eee; color: #666; font-size:13px;}
+.stdtable { border-left: 1px solid Navy; border-top: 1px solid Navy; border-right: 1px solid Gray; border-bottom: 1px solid Gray;}
+.stdtable tbody tr td input { font-size:13px !important; }
+
+.mytable th, .mytable td { line-height: 18px; vertical-align: middle; color: #333; }
+.mytable thead th, .mytable thead td { padding: 5px 5px; border: 1px solid silver; border-bottom: 1px solid gray; text-align: left; }
+        
+.mytable thead th {background:#b5cfd2 url('/images/cell-blue.jpg'); Color: Navy;}
+.mytable thead td { font-weight: bold;}
+.mytable tbody tr td { padding: 3px 5px; border-right: 1px solid #eee; border-bottom: 1px solid #eee; color: #666; font-size:13px; }
+.mytable { border-left: 1px solid Navy; border-top: 1px solid Navy; border-right: 1px solid Gray; border-bottom: 1px solid Gray;}
+.mytable tbody tr td input { font-size:13px !important; }
+
+.stdform2 span.field { width: inherit !important; }
+
+.rightdiv50 { width: 49.5% !important;; margin-right: 2px !important; }
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.form-group label { margin-bottom: 0px !important; color: darkmagenta !important;}
+
+/* ------------------------------------ */
+/* Modal Popup Dialog */
+/* ------------------------------------ */
+.modal-dialog {
+    width: 80%;
+    height: 600px !important;
+}
+
+.modal-content {
+    min-height: 80%;
+    background-color: White; /*  #BBD6EC; */
+    border:0px;
+}
+
+.modal-header {
+    background-color: #337AB7;
+    padding: 10px 10px;
+    color: #FFF;
+    /*border-bottom: 2px dashed #337AB7;*/
+}    
+
+/* ------------------------------------ */
+/* Modal Popup Dialog */
+/* ------------------------------------ */
+.form-control { line-height:1rem !important; padding:3px 3px !important; }
+
+select.form-control:not([size]):not([multiple]) { height: 1.8rem; }
+
+
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: pink !important;
+  font-size:10px !important;
+  font-style: italic !important;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: pink !important;
+  font-size:10px !important;
+  font-style: italic !important;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: pink !important;
+  font-size:10px !important;
+  font-style: italic !important;
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: pink !important;
+  font-size:10px !important;
+  font-style: italic !important;
+}
+

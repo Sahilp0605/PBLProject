@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>AjaxControlToolkit.HtmlEditor.Sanitizer</id>
+    <version>18.1.1</version>
+    <title>Ajax Control Toolkit HtmlEditor Sanitizer</title>
+    <authors>CodePlex Foundation</authors>
+    <owners>CodePlex Foundation</owners>
+    <licenseUrl>https://github.com/DevExpress/AjaxControlToolkit/blob/master/LICENSE.tx</licenseUrl>
+    <projectUrl>https://github.com/DevExpress/AjaxControlToolkit</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>This package provides HTML sanitization (to prevent XSS attacks) for the AjaxControlToolkit HtmlEditor extender.</description>
+    <summary>This package provides HTML sanitization (to prevent XSS attacks) for the AjaxControlToolkit HtmlEditor extender.</summary>
+    <copyright>Copyright © CodePlex Foundation 2012-2018</copyright>
+    <language>en-US</language>
+    <tags>Ajax Toolkit</tags>
+    <dependencies>
+      <dependency id="HtmlAgilityPack" version="1.4.9" />
+    </dependencies>
+  </metadata>
+</package>

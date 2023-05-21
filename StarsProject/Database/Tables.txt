@@ -1,0 +1,221 @@
+﻿IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[QuotationFollowUp_Log]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[QuotationFollowUp_Log](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[QuatationID] [bigint] NULL,
+	[Remark] [nvarchar](500) NULL,
+	[CreatedBy] [nvarchar](20) NULL,
+	[CreatedDate] [datetime] NULL
+) ON [PRIMARY]
+END
+GO
+--------------------------------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[QuotationFollowUp_ATTACHMENT]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[QuotationFollowUp_ATTACHMENT](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[QuatationID] [bigint] NULL,
+	[LogID] [bigint] NULL,
+	[FileName] [nvarchar](max) NULL,
+	[CreatedBy] [nvarchar](20) NULL,
+	[CreatedDate] [datetime] NULL
+) ON [PRIMARY]
+
+GO
+-----------------------------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[OfficeExpense]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[OfficeExpense](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[ExpenseDate] [DateTime] NULL,
+	[ExpenseNotes] [nvarchar](max) NULL,
+	[CreatedBy] [nvarchar](50) NULL,
+	[CreatedDate] [DateTime] NULL,
+	[UpdatedBy] [nvarchar](50) NULL,
+	[UpdatedDate] [DateTime] NULL,
+ CONSTRAINT [PK_OfficeExpense] PRIMARY KEY CLUSTERED 
+(
+	[pkID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+END
+GO
+-------------------------------------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[OfficeExpense_Detail]') AND type in (N'U'))
+BEGIN
+CREATE TABLE [dbo].[OfficeExpense_Detail](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[RefpkID] [bigint] NULL,
+	[ExpenseTypeId] [bigint] NULL,
+	[Amount] [decimal](12, 2) NULL,
+	[Remarks] [nvarchar](max) NULL,
+	[Voucher] [nvarchar](max) NULL,
+	[CreatedBy] [nvarchar](50) NULL,
+	[CreatedDate] [DateTime] NULL,
+	[UpdatedBy] [nvarchar](50) NULL,
+	[UpdatedDate] [DateTime] NULL,
+ CONSTRAINT [PK_OfficeExpense_Detail] PRIMARY KEY CLUSTERED 
+(
+	[pkID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
+GO
+
+
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[SiteSurvay]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[SiteSurvay](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[DocNo] [nvarchar](20) NULL,
+	[SheetNo] [nvarchar](50) NULL,
+	[SurvayDate] [datetime] NULL,
+	[CustID] [bigint] NULL,
+	[Customer] [nvarchar](100) NULL,
+	[ContPerson1] [nvarchar](100) NULL,
+	[ContNo1] [nvarchar](10) NULL,
+	[ContAddress1][nvarchar](1000) NULL,
+	[ContEmail1] [nvarchar](50) NULL,
+	[ContDesignation1] [nvarchar](25) NULL,
+	[ContPerson2] [nvarchar](100) NULL,
+	[ContNo2] [nvarchar](10) NULL,
+	[ContAddress2][nvarchar](1000) NULL,
+	[ContEmail2] [nvarchar](50) NULL,
+	[ContDesignation2] [nvarchar](25) NULL,
+	[SiteAddress][nvarchar](1000) NULL,
+	[Latitude] [decimal](12,4) NULL,
+	[Longitude] [decimal](12,4) NULL,
+	[Altitude] [decimal](12,4) NULL,
+	[NearByRailwayStation] [nvarchar](100) NULL,
+	[NearByAirport] [nvarchar](100) NULL,
+	[WaterAndElectricity] [nvarchar](100) NULL,
+	[RoofTopRCCLocation] [nvarchar](100) NULL,
+	[RoofTopMetalSheetLocation] [nvarchar](100) NULL,
+	[GroundMountLocation] [nvarchar](100) NULL,
+	[StructureType] [nvarchar](100) NULL,
+	[RoofTopRCCTiltAngle] [decimal](12,4) NULL,
+	[RoofTopMetalSheetTiltAngle] [decimal](12,4) NULL,
+	[GroundMountTiltAngle] [decimal](12,4) NULL,
+	[RoofTopRCCArea] [decimal](12,4) NULL,
+	[RoofTopMetalSheetArea] [decimal](12,4) NULL,
+	[GroundMountArea] [decimal](12,4) NULL,
+	[RoofTopRCCOrientation] [nvarchar](50) NULL,
+	[RoofTopMetalSheetOrientation] [nvarchar](50) NULL,
+	[GroundMountOrientation] [nvarchar](50) NULL,
+	[PenetrationAllowed] [nvarchar](50) NULL,
+	[OnGridDGRating] [nvarchar](50) NULL,
+	[OffGridDGRating] [nvarchar](50) NULL,
+	[HybridDGRating] [nvarchar](50) NULL,
+	[OnGridContractDemand] [nvarchar](50) NULL,
+	[OffGridContractDemand] [nvarchar](50) NULL,
+	[HybridContractDemand] [nvarchar](50) NULL,
+	[OnGridCapacity] [decimal](12,4) NULL,
+	[OffGridCapacity] [decimal](12,4) NULL,
+	[HybridCapacity] [decimal](12,4) NULL,
+	[InstalationType] [nvarchar](100) NULL,
+	[DGSynchronisation] [nvarchar](100) NULL,
+	[DGOperationMode] [nvarchar](100) NULL,
+	[DataMonitoring] [nvarchar](100) NULL,
+	[WeatherMonitoringSystem] [nvarchar](100) NULL,
+	[AvailableBreaker] [nvarchar](100) NULL,
+	[BusBarTypeAndSize] [nvarchar](100) NULL,
+	[KVARating] [decimal](12,4) NULL,
+	[PrimaryVolt] [decimal](12,4) NULL,
+	[SecondaryVolt] [decimal](12,4) NULL,
+	[Impedance] [decimal](12,4) NULL,
+	[VectorGrp] [nvarchar](25) NULL,
+	[OMRequirements] [nvarchar](MAX) NULL,
+	[ModuleCleaningRequirements] [nvarchar](MAX) NULL,
+	[RoofPlan] [nvarchar](MAX) NULL,
+	[LoadDetails] [nvarchar](MAX) NULL,
+	[EarthResistivity] [nvarchar](MAX) NULL,
+	[EarthPit] [nvarchar](MAX) NULL,
+	[DistanceFromElectricalRoom] [nvarchar](MAX) NULL,
+	[SheetType] [nvarchar](MAX) NULL,
+	[PurlinDistance] [nvarchar](MAX) NULL,
+	[RoofSheet] [nvarchar](MAX) NULL,
+	[StructureStability] [nvarchar](MAX) NULL,
+	[Skylight] [nvarchar](MAX) NULL,
+	[LadderToRoof] [nvarchar](MAX) NULL,
+	[SoilTest] [nvarchar](MAX) NULL,
+	[ContourSurvey] [nvarchar](MAX) NULL,
+	[Tilt] [nvarchar](MAX) NULL,
+	[Inverter] [nvarchar](MAX) NULL,
+	[CreatedBy] [nvarchar](20) NULL,
+	[CreatedDate] [datetime] NULL,
+	[UpdatedBy] [nvarchar](20) NULL,
+	[UpdatedDate] [datetime] NULL,
+) ON [PRIMARY]
+
+GO
+
+
+
+----------------------------------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MST_SiteSurvay_Documents]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[MST_SiteSurvay_Documents](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[DocNo] [NVARCHAR](50) NULL,
+	[Name] [nvarchar](50) NULL,
+	[Type] [nvarchar](50) NULL,
+	[data] [varbinary](max) NULL,
+	[CreatedBy] [nvarchar](20) NULL,
+	[CreatedDate] [datetime] NULL,
+ ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+--------------------------------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GeneralTemplate]') AND type in (N'U'))
+BEGIN
+	CREATE TABLE [dbo].[GeneralTemplate](
+		[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+		[Subject] [nvarchar](1500) NULL,
+		[ContentData] [nvarchar](max) NULL,
+		[CreatedBy] [nvarchar](20) NULL,
+		[CreatedDate] [datetime] NOT NULL,
+	 CONSTRAINT [PK_GeneralTemplate] PRIMARY KEY CLUSTERED 
+	(
+		[pkID] ASC
+	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
+GO
+------------------------
+IF  NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DBCRNote_Detail]') AND type in (N'U'))
+BEGIN
+CREATE TABLE [dbo].[DBCRNote_Detail](
+	[pkID] [bigint] IDENTITY(1,1) NOT NULL,
+	[VoucherNo] [nvarchar](20) NULL,
+	[ProductID] [bigint] NULL,
+	[TaxType] [int] NULL,
+	[DBC] [nvarchar](10) NULL,
+	[Rate] [decimal](12, 2) NULL,
+	[Unit] [nvarchar](10) NULL,
+	[Qty] [decimal](12, 2) NULL,
+	[DiscountPer] [decimal](12, 2) NULL,
+	[DiscountAmt] [decimal](12, 2) NULL,
+	[NetRate] [decimal](12, 2) NULL,
+	[HeaderDiscAmt] [decimal](12, 2) NULL,
+	[Amount] [decimal](12, 2) NULL,
+	[SGSTPer] [decimal](12, 2) NULL,
+	[SGSTAmt] [decimal](12, 2) NULL,
+	[CGSTPer] [decimal](12, 2) NULL,
+	[CGSTAmt] [decimal](12, 2) NULL,
+	[IGSTPer] [decimal](12, 2) NULL,
+	[IGSTAmt] [decimal](12, 2) NULL,
+	[AddTaxPer] [decimal](12, 2) NULL,
+	[AddTaxAmt] [decimal](12, 2) NULL,
+	[NetAmt] [decimal](12, 2) NULL,
+	[ForOrderNo] [nvarchar](20) NULL,
+	[CreatedBy] [nvarchar](20) NULL,
+	[CreatedDate] [datetime] NULL,
+	[UpdatedBy] [nvarchar](20) NULL,
+	[UpdatedDate] [datetime] NULL,
+	[ProductSpecification] [nvarchar](max) NULL,
+	[UnitQty] [decimal](12, 2) NULL,
+	[LocationID] BIGINT 
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
+GO

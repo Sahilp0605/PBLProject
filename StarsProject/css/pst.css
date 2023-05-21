@@ -1,0 +1,291 @@
+﻿.pagetitle {
+	display:block !important;
+}
+.subh4title {
+	border-bottom: 1px solid #DDDDDD;
+	padding:10px 0;
+}
+.frigtimg {
+	float:right;
+	width:150px;
+	height:auto;
+	display:block;
+}
+.leftdiv50 {
+	width:50%;
+	height:auto;
+	float:left;
+}
+.rightdiv50 {
+	width:50%;
+	height:auto;
+	float:right;
+}
+.bordeelftnn {
+	border-right:0px solid #DDDDDD !important
+}
+.labeltext {
+	width:90%;
+	background: none repeat scroll 0 0 #FCFCFC;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333;
+	padding:5px 5px;
+	display:block;
+	vertical-align: middle;
+}
+.stdform2 span.field, .stdform2 div.field {
+	margin-left: 220px;
+	display: block;
+	background: #fff;
+	padding:5px 20px;
+	border-left: 1px solid #ddd;
+}
+.stdform2 label {
+	display: inline-block;
+	padding:10px 20px 0;
+	vertical-align: top;
+	text-align:right;
+	font-weight: bold;
+}
+.stdform label {
+	color:#000;
+}
+.shortlbltext {
+	width:70%;
+	background: none repeat scroll 0 0 #FCFCFC;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333;
+	padding:5px 5px;
+	display:inline-block;
+	vertical-align: middle;
+}
+.shortingbxtext {
+	width:15%;
+	background: none repeat scroll 0 0 #FCFCFC;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333;
+	padding:3px 5px;
+	margin:7px 0px !important;
+	display:inline-block;
+	vertical-align: middle;
+}
+/*#labelshorting {
+	height:auto;
+	display:inline;
+	float:none !important;
+	padding:7px 10px;
+	line-height:40px;
+}*/
+#marginleft120 {
+	margin-left:0px;
+	margin-right:5px;
+	display:inline !important;
+	padding:15px 10px;
+	background-color:transparent !important;
+}
+.rghtbrdr {
+	border-right:1px solid #DDDDDD
+}
+.conformedtick {
+	background:url(/images/confrmtck.png) no-repeat center 7px;
+	width:26px;
+	height:26px;
+	padding:13px 15px;
+}
+.notconformedtick {
+	background:url(/images/noconfrmtck.png) no-repeat center 7px;
+	width:26px;
+	height:26px;
+	padding:13px;
+}
+.padingright70 {
+	padding-right:70px;
+}
+.padingright68 {
+	padding-right:68px;
+}
+.padingright85 {
+	padding-right:85px;
+}
+.padingright29 {
+	padding-right:29px;
+}
+.padingright20 {
+	padding-right:20px;
+}
+.padingright17 {
+	padding-right:17px;
+}
+.padingright80 {
+	padding-right:80px;
+}
+.padingright82 {
+	padding-right:82px;
+}
+.bordrtopnone {
+	border-top:0px !important;
+}
+.widthroll {
+	width:90% !important;
+	margin-right:10px;
+}
+.rollpnum {
+	height: auto;
+	float: left;
+	margin: 0px !important;
+	width:90%;
+}
+.spaninptfixed {
+	width: 85%;
+	margin-left: 100px !important;
+}
+.frigtimg {
+	position:absolute;
+	top:-20px;
+	right:0px;
+	width:80px;
+	height:100px;
+	display:block;
+}
+.frigtimg img {
+	width:80px;
+	height:100px;
+}
+
+
+/* TODAY CSS 12 10 2013 */
+.subh4title {
+	border-bottom: 1px solid #DDDDDD;
+	padding:15px 0 10px 0;
+}
+.labeltext {
+	width:90%;
+	background: none repeat scroll 0 0 #FFF;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333;
+	padding:5px 5px;
+	display:block;
+	vertical-align: middle;
+}
+.spaninptregisr {
+	margin-left:0px !important;
+	width:71% !important;
+	background-color:transparent !important;
+	float:right;
+	padding:5px 10px 5px 20px !important;
+}
+.rollpnum {
+	float: left;
+	height: auto;
+	margin: 0 !important;
+	width: 75%;
+}
+.widthrollinpt {
+	width:75% !important;
+	margin-right:10px;
+}
+#labelshorting {
+	display: inline-block;
+	height: auto;
+	line-height: 30px;
+	padding: 2px 5px;
+	width:20%;
+}
+#marginleft120 {
+	/*background-color: rgba(0, 0, 0, 0) !important;*/
+    display: inline-block !important;
+	float: left !important;
+	margin-left: 0 !important;
+	margin-right: 5px !important;
+	padding: 0 10px !important;
+	width:21% !important;
+}
+
+.shortingbxtext {
+	background: none repeat scroll 0 0 #FFF;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333333;
+	display: inline-block;
+	margin: 7px 0 !important;
+	padding: 3px 5px;
+	vertical-align: middle;
+	width:50%;
+}
+.applingbxtext {
+	background: none repeat scroll 0 0 #FFF;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333333;
+	display: inline-block;
+	margin: 7px 0 !important;
+	padding: 3px 5px;
+	vertical-align: middle;
+	width:80%;
+}
+.widthintext19 {
+	width:52% !important;
+}
+
+#labelrfid {
+	display: inline-block;
+	height: auto;
+	line-height: 30px;
+	padding: 2px 10px;
+	width:20%;
+}
+#labelrfidshort {
+	display: inline-block;
+	height: auto;
+	line-height: 30px;
+	padding: 2px 10px;
+	width:15%;
+}
+.addresstext {
+	width:90%;
+	background: none repeat scroll 0 0 #FFF;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #333;
+	height:50px;
+	padding:5px 5px;
+	display:block;
+	vertical-align: middle;
+}
+.borderbtrw{border:0px !important;}
+.shortinptfld {
+	width:50% !important;
+	background: none repeat scroll 0 0 #FCFCFC;
+	margin:7px 0px !important;
+	border: 1px solid #CCCCCC;
+	border-radius: 2px 2px 2px 2px;
+	box-shadow: 0 1px 3px #DDDDDD inset;
+	color: #666666;
+	padding:6px 5px !important;
+	vertical-align: middle;
+}
+.widthbigto{width:30% !important;}
+#marwdthlow {
+	/*background-color: rgba(0, 0, 0, 0) !important;*/
+    display: inline-block !important;
+	float: left !important;
+	margin-left: 0 !important;
+	margin-right: 5px !important;
+	padding: 0 10px !important;
+	width:15% !important;
+}
+.widthbigspan{width:22% !important;}
+.widthlablein {
+	width:98% !important;
+}

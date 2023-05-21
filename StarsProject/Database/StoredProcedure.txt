@@ -1,0 +1,2008 @@
+﻿IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesOrderApproval_UPD')
+	DROP PROCEDURE [dbo].[SalesOrderApproval_UPD]
+GO
+	CREATE PROCEDURE [dbo].[SalesOrderApproval_UPD]
+	@pkID BIGINT,
+	@ApprovalStatus NVARCHAR(100), 
+	@LoginUserID NVARCHAR(20),
+	@ReturnCode INT OUTPUT,
+	@ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+	BEGIN TRANSACTION ChkPoint
+	BEGIN TRY
+		Declare @Description nvarchar(100);
+		Declare @pCustomerID nvarchar(100);
+		Declare @pApprovalStatus nvarchar(20);
+
+		IF (@pkID <> 0 And @ApprovalStatus IS NOT NULL And @ApprovalStatus<>'')
+		BEGIN
+			select @pCustomerID=CustomerID,@pApprovalStatus=ApprovalStatus from SalesOrder WHERE pkID = @pkID; 
+			IF (@pApprovalStatus<>@ApprovalStatus)
+			BEGIN
+				UPDATE SalesOrder
+				SET ApprovalStatus = @ApprovalStatus,  
+					ApprovedBy = @LoginUserID, 
+					ApprovedDate = GETDATE()
+				WHERE pkID = @pkID;
+				/* ------------------------------------------------------------- */
+				/* Sending Notification */		
+				/* ------------------------------------------------------------- */
+				SET @Description='Sales Order ' + @ApprovalStatus +' For ' + [dbo].fnGetCustomerName(@pCustomerID);			
+				EXECUTE Mst_Notification_INS_UPD @ModuleName='Sales Order',@Description=@Description,@LoginUserID=@LoginUserID,@ReturnCode=@ReturnCode OUTPUT,@ReturnMsg=@ReturnMsg OUTPUT;
+			END
+			/* --------------------------------------------------------- */
+			SET @ReturnCode = 2
+			SET @ReturnMsg = 'Sales Order Status Updated Successfully !'
+		END
+		-- Save New/Existing Record in Client Table		
+		COMMIT TRANSACTION  ChkPoint
+	END TRY	
+	BEGIN CATCH
+		ROLLBACK TRANSACTION ChkPoint
+
+		DECLARE @ErrorMessage NVARCHAR(4000);
+		DECLARE @ErrorSeverity INT;
+		DECLARE @ErrorState INT;
+
+		SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+
+
+		RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+		
+		SET @ReturnCode = 0
+		SET @ReturnMsg = 'Some Error in occure'
+	END CATCH
+	SELECT @ReturnCode, @ReturnMsg
+END
+GO
+--------------------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderApproval_UPD')
+	DROP PROCEDURE [dbo].[PurchaseOrderApproval_UPD]
+GO
+	CREATE PROCEDURE [dbo].[PurchaseOrderApproval_UPD]
+    @pkID BIGINT,
+    @ApprovalStatus NVARCHAR(50), 
+    @LoginUserID NVARCHAR(20),
+    @ReturnCode INT OUTPUT,
+    @ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+    BEGIN TRANSACTION ChkPoint
+    BEGIN TRY
+        Declare @Description nvarchar(100);
+        Declare @pCustomerID nvarchar(100);
+        Declare @pApprovalStatus nvarchar(20);
+        IF (@pkID <> 0 And @ApprovalStatus IS NOT NULL And @ApprovalStatus<>'')
+        BEGIN
+            select @pCustomerID=CustomerID,@pApprovalStatus=ApprovalStatus from PurchaseOrder WHERE pkID = @pkID; 
+            IF (@pApprovalStatus<>@ApprovalStatus)
+            BEGIN
+                UPDATE PurchaseOrder
+                SET ApprovalStatus = @ApprovalStatus,  
+                    ApprovedBy = @LoginUserID, 
+                    ApprovedDate = GETDATE()
+                WHERE pkID = @pkID;
+                /* ------------------------------------------------------------- */
+                /* Sending Notification */      
+                /* ------------------------------------------------------------- */
+                SET @Description='Purchase Order ' + @ApprovalStatus +' For ' + [dbo].fnGetCustomerName(@pCustomerID);          
+                EXECUTE Mst_Notification_INS_UPD @ModuleName='Purchase Order',@Description=@Description,@LoginUserID=@LoginUserID,@ReturnCode=@ReturnCode OUTPUT,@ReturnMsg=@ReturnMsg OUTPUT;
+            END
+            /* --------------------------------------------------------- */
+            SET @ReturnCode = 2
+            SET @ReturnMsg = 'Purchase Order Status Updated Successfully !'
+        END
+        -- Save New/Existing Record in Client Table     
+        COMMIT TRANSACTION  ChkPoint
+    END TRY 
+    BEGIN CATCH
+        ROLLBACK TRANSACTION ChkPoint
+        DECLARE @ErrorMessage NVARCHAR(4000);
+        DECLARE @ErrorSeverity INT;
+        DECLARE @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+        
+        SET @ReturnCode = 0
+        SET @ReturnMsg = 'Some Error in occure'
+    END CATCH
+    SELECT @ReturnCode, @ReturnMsg
+END
+GO
+-------------------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'MY_ExportDataList')
+	DROP PROCEDURE [dbo].[MY_ExportDataList]
+GO
+	CREATE PROCEDURE [dbo].[MY_ExportDataList]
+    @module NVARCHAR(30)=NULL,
+    @keyvalue NVARCHAR(50)=NULL,
+    @LoginUserID NVARCHAR(30)=NULL
+AS
+BEGIN
+    SET NOCOUNT ON
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+    IF (@LoginUserID IS NOT NULL AND @LoginUserID <> '')
+    BEGIN
+        Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID),
+               @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+        From viewCompanyUsers
+        Where lower(UserID) = lower(@LoginUserID);
+    END
+    /* ---------------------------------------------------------------- */
+    IF (Lower(@module) = 'externalleads')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY QueryDateTime ASC) AS RowNum, * From ExternalLeads) AS Temp;
+    ELSE IF (Lower(@module) = 'orgemployee')
+        SELECT *
+        FROM (SELECT pkID,
+              EmployeeName, MobileNo, EmailAddress, BasicPer, ShiftCode, DesigCode, OrgCode, ReportTo, FixedSalary,
+              BirthDate, JoinDate, BankName, BankBranch,BankAccountNo,BankIFSC,
+              DrivingLicenseNo, PassportNo, AadharCardNo, PANCardNo
+              From OrganizationEmployee) AS Temp;
+	ELSE IF (Lower(@module) = 'complaint')
+		SELECT *
+        FROM (SELECT com.pkID,
+              com.ComplaintNo, com.ComplaintDate, com.CustomerID,cust.CustomerName,com.ReferenceNo,com.ComplaintNotes,
+			  com.ComplaintStatus,ISNULL(com.PreferredDate,'') As PreferredDate,TimeFrom,TimeTo,com.EmployeeID,emp.EmployeeName
+              From Complaint com
+			  Inner Join MST_Customer cust ON cust.CustomerID = com.CustomerID
+			  Inner Join OrganizationEmployee emp ON emp.pkID = com.EmployeeID) AS Temp;
+    ELSE IF (Lower(@module) = 'inquiry')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY InquiryDate ASC) AS RowNum, * From Inquiry) AS Temp;
+    ELSE IF (Lower(@module) = 'followup')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY FollowupDate ASC) AS RowNum, * From Inquiry_FollowUp) AS Temp;
+    ELSE IF (Lower(@module) = 'quotation')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY QuotationDate ASC) AS RowNum, * From Quotation) AS Temp;
+    ELSE IF (Lower(@module) = 'salesorder')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate ASC) AS RowNum, * From SalesOrder) AS Temp;
+    ELSE IF (Lower(@module) = 'salesbill')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY InvoiceDate ASC) AS RowNum, * From SalesBill) AS Temp;
+    ELSE IF (Lower(@module) = 'customer')
+        SELECT *
+        FROM (SELECT 
+              CustomerID, CustomerName, CustomerType, Address, Area, CityCode, PinCode, GSTNO, PANNO, CINNO,
+              ContactNo1, ContactNo2, EmailAddress, WebsiteAddress,
+              OrgTypeCode, ParentID, StateCode, StateCode1,
+              CustomerSourceID, GenerateInquiry, CountryCode, CountryCode1, Opening, PriceListID
+              From MST_Customer) AS Temp;
+    ELSE IF (Lower(@module) = 'customercategory')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY CategoryName ASC) AS RowNum, * From MST_CustomerCategory) AS Temp;
+    ELSE IF (Lower(@module) = 'products')
+        SELECT * FROM (SELECT pkID,
+                ProductName,ProductAlias,ProductGroupID,ProductType,BrandID,Unit,UnitPrice,MinQuantity,
+                TaxRate,ProductSpecification,HSNCode,Min_UnitPrice,Max_UnitPrice,UnitQuantity,UnitSize,
+                OpeningSTK,OutwardSTK,ClosingSTK,InwardSTK
+                From MST_Product) AS Temp;
+    ELSE IF (Lower(@module) = 'inquirystatus')
+        SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY StatusCategory ASC) AS RowNum, * From MST_InquiryStatus) AS Temp;
+    ELSE IF (Lower(@module) = 'userinquiry')
+    BEGIN
+        SELECT *
+        FROM (SELECT ROW_NUMBER() OVER(ORDER BY  InquiryStatus, inq.InquiryDate) AS RowNum,
+                    inq.pkID, inq.InquiryNo, inq.InquiryDate, inq.ReferenceName, inq.InquirySource,
+                    inq.CustomerID, cust.CustomerName, cust.EmailAddress,
+                    inq.FollowupNotes, inq.FollowupDate, inq.MeetingNotes,
+                    inq.InquiryStatusID, InquiryStatus As "InquiryStatus",
+                    ct.CityName, st.StateName,
+                    (Select Sum(inp.Quantity * item.UnitPrice) From Inquiry_Product inp Inner Join mst_product item On inp.ProductID = item.pkID
+                    Where inq.InquiryNo = inp.InquiryNo) As "TotalAmount",
+                    dbo.fnGetEmployeeByUserID(inq.CreatedBy) As "EmployeeName", dbo.fnGetDesignationByUserID(inq.CreatedBy) As "Designation",
+                    inq.CreatedBy, dbo.fnGetCompanyIDByUserID(inq.CreatedBy) As "CompanyID",
+                    (Select Top 1 FollowupDate From Inquiry_Followup inf Where inf.CustomerID = inq.CustomerID Order By inf.FollowupDate DESC) as "LastFollowupDate",
+                    (Select Top 1 NextFollowupDate From Inquiry_Followup inf Where inf.CustomerID = inq.CustomerID Order By inf.FollowupDate DESC) as "LastNextFollowupDate",
+                    inq.Priority,inq.ClosureReason,inq.PreferredTime, dbo.fnGetInquiryStatus(inq.ClosureReason) As "ClosureReasonName"
+        From Inquiry inq
+        Inner Join MST_InquiryStatus ins On inq.InquiryStatusID = ins.pkID
+        Left Outer Join [MST_Customer] cust On inq.CustomerID = cust.CustomerID
+        Left Outer Join MST_City ct On ct.CityCode = cust.CityCode
+        Left Outer Join MST_State st On st.StateCode = ct.StateCode
+        Inner Join viewCompanyUsers vcu On inq.CreatedBy = vcu.UserID
+        Where (lower(inq.CreatedBy) = lower(@LoginUserID) Or lower(@UserRole) = 'admin' Or lower(@UserRole) = 'bradmin')
+          And (Case When @keyvalue IS NULL Or @keyvalue='' THEN 'a' Else lower(ins.InquiryStatus) End =
+              Case When @keyvalue IS NULL Or @keyvalue='' THEN 'a' Else lower(@keyvalue) End)
+        ) AS Temp;
+    END
+    ELSE IF (Lower(@module) = 'pricelist')
+    BEGIN
+        SELECT *
+        FROM (SELECT pl.PriceListName As 'Price List Name',pld.UnitPrice As 'Rate',pld.Discount As 'Discount',
+                pld.ProductID As 'Product ID'
+                    From MST_PriceListDetail pld
+                    Inner Join MST_PriceList pl ON pl.pkID = pld.ParentID
+        ) AS Temp;
+    END
+    ELSE IF (Lower(@module) = 'telecaller')
+    BEGIN
+        SELECT *
+        FROM (SELECT SenderName as 'Contact Person',SenderMail as 'Email',QueryDatetime as 'Query Date',CompanyName as 'Company Name',
+            Message as 'Detail',
+            Address,City,Pincode,State,ProductID As Product,PrimaryMobileNo as 'Primary Contact #',
+            SecondaryMobileNo as 'Alternate Contact',LeadSource,cntry.CountryName as 'Country',LeadStatus as 'Lead Status',
+            ExLeadClosure as 'Reason For Disqualify',EmployeeID 'Assign To Emp' 
+            From ExternalLeads ExLead
+            Inner Join MST_Country cntry ON cntry.CountryCode = ExLead.CountryCode
+            Where ExLead.LeadSource = 'Telecaller'
+        ) AS Temp;
+    END
+END
+GO
+
+------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesBill_INS_UPD')
+	DROP PROCEDURE [dbo].[SalesBill_INS_UPD]
+GO
+	CREATE PROCEDURE [dbo].[SalesBill_INS_UPD]
+    @pkID BIGINT,
+    @InvoiceNo NVARCHAR(20), 
+    @InvoiceDate DATETIME, 
+    @FixedLedgerID BIGINT,
+    @CustomerID BIGINT,
+	@LocationID BIGINT=NULL, 
+    @BankID BIGINT,
+    @TerminationOfDeliery BIGINT = 0,
+    @TerminationOfDelieryCity BIGINT = 0,
+    @TermsCondition NVARCHAR(Max) = NULL,
+    @InquiryNo  NVARCHAR(50)=null,
+    @OrderNo  NVARCHAR(50)=null,
+    @QuotationNo  NVARCHAR(50)=null,
+    @ComplaintNo  NVARCHAR(20)=null,
+    @RefType nvarchar(50)=null,
+    @SupplierRef nvarchar(20)=null,
+    @SupplierRefDate DATETIME=null,
+    @OtherRef nvarchar(20)=null,
+    @PatientName NVARCHAR(50)='', 
+    @PatientType NVARCHAR(50)='',
+    @Amount decimal(12,2) = 0,
+    @Percentage decimal(12,2) = 0,
+    @EstimatedAmt decimal(12,2) = 0,
+    @BasicAmt decimal(12,2),
+    @DiscountAmt decimal(12,2),
+    @SGSTAmt decimal(12,2), 
+    @CGSTAmt decimal(12,2), 
+    @IGSTAmt decimal(12,2), 
+    @ROffAmt decimal(12,2),
+     
+    @ChargeID1 BIGINT,
+     @ChargeAmt1 decimal(12,2),
+     @ChargeBasicAmt1 decimal(12,2),
+     @ChargeGSTAmt1 decimal(12,2),
+     @ChargeID2 BIGINT,
+     @ChargeAmt2 decimal(12,2),
+     @ChargeBasicAmt2 decimal(12,2),
+     @ChargeGSTAmt2 decimal(12,2),
+     @ChargeID3 BIGINT,
+     @ChargeAmt3 decimal(12,2),
+     @ChargeBasicAmt3 decimal(12,2),
+     @ChargeGSTAmt3 decimal(12,2),
+     @ChargeID4 BIGINT,
+     @ChargeAmt4 decimal(12,2),
+     @ChargeBasicAmt4 decimal(12,2),
+     @ChargeGSTAmt4 decimal(12,2),
+     @ChargeID5 BIGINT,
+     @ChargeAmt5 decimal(12,2),
+     @ChargeBasicAmt5 decimal(12,2),
+     @ChargeGSTAmt5 decimal(12,2), 
+    
+    @NetAmt decimal(12,2), 
+    @ModeOfTransport nvarchar(50),
+    @TransporterName nvarchar(100),
+	@DeliverTo nvarchar(50),
+    @VehicleNo nvarchar(50),
+    @LRNo nvarchar(50),
+    @DeliveryNote nvarchar(100)=null,
+    @DispatchDocNo nvarchar(20)=null,
+    @LRDate datetime = null,
+    @EwayBillNo nvarchar(50),
+    @ModeOfPayment nvarchar(50),
+    @TransportRemark nvarchar(150),
+    @LoginUserID NVARCHAR(20),
+    @ReturnCode INT OUTPUT,
+    @ReturnMsg NVARCHAR(255) OUTPUT,
+    @ReturnInvoiceNo NVARCHAR(255) OUTPUT
+AS
+BEGIN
+    BEGIN TRANSACTION ChkPoint
+    BEGIN TRY
+        DECLARE @return_value int, @ReturnCode1 int, @ReturnMsg1 nvarchar(255)
+        DECLARE @EmployeeIDnew BIGINT;
+        Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20); 
+        Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+               @CompanyType = lower(CompanyType)
+        From viewCompanyUsers
+        Where lower(UserID) = lower(@LoginUserID);
+        /* ----------------------------------------------------- */         
+        SET @ReturnCode = 0;
+        SET @ReturnMsg = '';
+        IF (@InvoiceNo IS NOT NULL AND @InvoiceNo<>'')
+        BEGIN
+            IF EXISTS (Select * From SalesBill Where InvoiceNo = @InvoiceNo And pkID <> @pkID)  
+            BEGIN 
+                SET @ReturnCode = -1;
+                SET @ReturnMsg = 'Duplicate Invoice, Invoice # ' + @InvoiceNo + ' is already Exists !';
+                SET @ReturnInvoiceNo = @InvoiceNo;
+            END 
+        END
+        ELSE 
+        BEGIN 
+            SET @InvoiceNo = dbo.fnGetSalesBillNo(@InvoiceDate)
+            SET @ReturnInvoiceNo = @InvoiceNo;
+        END
+        /* ----------------------------------------------------- */     
+        IF (@ReturnCode >= 0) 
+        BEGIN
+            IF NOT EXISTS(SELECT * FROM Salesbill WHERE pkID = @pkID)
+            BEGIN
+                SELECT @EmployeeIDnew = dbo.fnGetEmployeeIDByUserID(@LoginUserID)
+                /* ----------------------------------------------------- */ 
+                
+                INSERT INTO SalesBill
+                (InvoiceNo, InvoiceDate, FixedLedgerID, CustomerID,BankID, TerminationOfDeliery, TerminationOfDelieryCity, TermsCondition,
+                InquiryNo , OrderNo,QuotationNo,ComplaintNo, SupplierRef, SupplierRefDate, OtherRef,RefType ,
+                PatientName ,PatientType ,Amount ,Percentage ,EstimatedAmt ,
+                BasicAmt, DiscountAmt, SGSTAmt, 
+                CGSTAmt, IGSTAmt, ROffAmt, ChargeID1,ChargeAmt1,ChargeID2,ChargeAmt2,
+                ChargeID3,ChargeAmt3,ChargeID4,ChargeAmt4,ChargeID5,ChargeAmt5,
+                ChargeBasicAmt1,ChargeBasicAmt2,ChargeBasicAmt3,ChargeBasicAmt4,ChargeBasicAmt5,
+                ChargeGSTAmt1,ChargeGSTAmt2,ChargeGSTAmt3,ChargeGSTAmt4,ChargeGSTAmt5,
+                NetAmt,LocationID,
+                    ModeOfTransport,TransporterName,VehicleNo,DeliveryNote,DispatchDocNo,LRNo,LRDate,EwayBillNo,ModeOfPayment,TransportRemark,DeliverTo,
+                    CreatedBy, CreatedDate)
+                VALUES 
+                    (@InvoiceNo, @InvoiceDate, @FixedLedgerID, @CustomerID,@BankID, @TerminationOfDeliery, @TerminationOfDelieryCity, @TermsCondition,
+                    @InquiryNo,@OrderNo,@QuotationNo, @ComplaintNo, @SupplierRef, @SupplierRefDate, @OtherRef, @RefType, 
+                    @PatientName, @PatientType, @Amount, @Percentage, @EstimatedAmt ,
+                    @BasicAmt, @DiscountAmt, @SGSTAmt, 
+                    @CGSTAmt, @IGSTAmt, @ROffAmt,@ChargeID1,@ChargeAmt1,@ChargeID2,@ChargeAmt2,
+                    @ChargeID3,@ChargeAmt3,@ChargeID4,@ChargeAmt4,@ChargeID5,@ChargeAmt5,
+                    @ChargeBasicAmt1,@ChargeBasicAmt2,@ChargeBasicAmt3,@ChargeBasicAmt4,@ChargeBasicAmt5,
+                    @ChargeGSTAmt1,@ChargeGSTAmt2,@ChargeGSTAmt3,@ChargeGSTAmt4,@ChargeGSTAmt5,
+                    @NetAmt,@LocationID,
+                    @ModeOfTransport,@TransporterName,@VehicleNo,@DeliveryNote,@DispatchDocNo,@LRNo,@LRDate,@EwayBillNo,@ModeOfPayment,@TransportRemark,@DeliverTo, 
+                    @LoginUserID, GETDATE())
+                /* ----------------------------------------------------------- */
+                Insert Into TempTable (CreatedDate, Description) Values (getdate(), 'Sales - Insert'); 
+                EXEC @return_value = SendLedgerTransaction @DebitCode = @CustomerID, @CreditCode = @FixedLedgerID, @TransAmount = @NetAmt, @ReturnCode = @ReturnCode1 OUTPUT, @ReturnMsg = @ReturnMsg1 OUTPUT;
+                /* ----------------------------------------------------------- */                       
+                SET @ReturnCode = 1
+                SET @ReturnMsg = 'Sales Bill Added Successfully !'
+            END
+            ELSE 
+            BEGIN
+                Insert Into TempTable (CreatedDate, Description) Values (getdate(), 'Sales - Update'); 
+                /* ----------------------------------------------------------- */
+                EXEC @return_value = SendLedgerTransactionReverse @TransID = @pkID, @Module = N'sale', @ReturnCode = @ReturnCode1 OUTPUT, @ReturnMsg = @ReturnMsg1 OUTPUT;
+                /* ----------------------------------------------------------- */
+                UPDATE SalesBill
+                SET InvoiceNo=@InvoiceNo,InvoiceDate=@InvoiceDate, 
+                    FixedLedgerID = @FixedLedgerID, CustomerId=@CustomerId, BankID=@BankID,
+                    TerminationOfDeliery = @TerminationOfDeliery, TerminationOfDelieryCity = @TerminationOfDelieryCity, 
+                    TermsCondition = @TermsCondition,
+                    InquiryNo = @InquiryNo, OrderNo = @OrderNo, QuotationNo = @QuotationNo, ComplaintNo = @ComplaintNo,
+                    SupplierRef = @SupplierRef, SupplierRefDate = @SupplierRefDate, OtherRef = @OtherRef,
+                    RefType = @RefType, PatientName = @PatientName, PatientType = @PatientType, Amount = @Amount,Percentage= @Percentage,EstimatedAmt = @EstimatedAmt ,
+                    BasicAmt=@BasicAmt, DiscountAmt = @DiscountAmt, SGSTAmt=@SGSTAmt, CGSTAmt=@CGSTAmt, IGSTAmt=@IGSTAmt, 
+                    ROffAmt=@ROffAmt, 
+                    ChargeID1=@ChargeID1,ChargeID2=@ChargeID2,ChargeID3=@ChargeID3,ChargeID4=@ChargeID4,ChargeID5=@ChargeID5,
+                    ChargeAmt1=@ChargeAmt1,ChargeAmt2=@ChargeAmt2,ChargeAmt3=@ChargeAmt3,ChargeAmt4=@ChargeAmt4,ChargeAmt5=@ChargeAmt5,
+                    ChargeBasicAmt1 = @ChargeBasicAmt1,ChargeBasicAmt2 = @ChargeBasicAmt2,ChargeBasicAmt3 = @ChargeBasicAmt3,ChargeBasicAmt4 = @ChargeBasicAmt4,ChargeBasicAmt5 = @ChargeBasicAmt5,
+                    ChargeGSTAmt1=@ChargeGSTAmt1,ChargeGSTAmt2 = @ChargeGSTAmt2,ChargeGSTAmt3 = @ChargeGSTAmt3,ChargeGSTAmt4 = @ChargeGSTAmt4,ChargeGSTAmt5 = @ChargeGSTAmt5,
+                    NetAmt=@NetAmt,LocationID=@LocationID,
+                    ModeOfTransport = @ModeOfTransport,TransporterName=@TransporterName,VehicleNo=@VehicleNo,
+                    DeliveryNote = @DeliveryNote,LRNo=@LRNo,DispatchDocNo = @DispatchDocNo,
+                    LRDate=@LRDate,EwayBillNo=@EwayBillNo,ModeOfPayment=@ModeOfPayment,TransportRemark=@TransportRemark,DeliverTo=@DeliverTo,
+                    UpdatedBy = @LoginUserID, UpdatedDate = GETDATE()
+                WHERE pkID = @pkID;
+                /* ----------------------------------------------------------- */
+                EXEC @return_value = SendLedgerTransaction @DebitCode = @CustomerID, @CreditCode = @FixedLedgerID, @TransAmount = @NetAmt, @ReturnCode = @ReturnCode1 OUTPUT, @ReturnMsg = @ReturnMsg1 OUTPUT;
+                /* ----------------------------------------------------------- */
+                SET @ReturnCode = 2
+                SET @ReturnMsg = 'Sales Bill Updated Successfully !'
+            END
+            Update Inquiry Set Billno = '' Where Billno = @InvoiceNo;
+            if(@InquiryNo IS NOT NULL AND @InquiryNo<>'')
+            BEGIN               
+                Update Inquiry Set Billno = @InvoiceNo Where InquiryNo = @InquiryNo;
+            END
+            Update SalesOrder Set Billno =  '' Where Billno = @OrderNo;
+            if(@OrderNo IS NOT NULL AND @OrderNo<>'')
+            BEGIN               
+                Update SalesOrder Set Billno =  @InvoiceNo Where OrderNo = @OrderNo;
+            END
+        END
+        -- Save New/Existing Record in Client Table     
+        COMMIT TRANSACTION  ChkPoint
+    END TRY 
+    BEGIN CATCH
+        ROLLBACK TRANSACTION ChkPoint
+        DECLARE @ErrorMessage NVARCHAR(4000);
+        DECLARE @ErrorSeverity INT;
+        DECLARE @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+        
+        SET @ReturnCode = 0
+        SET @ReturnMsg = 'Some Error in occure'
+    END CATCH
+    SELECT @ReturnCode, @ReturnMsg,@ReturnInvoiceNo
+END
+GO
+---------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesBillList')
+	DROP PROCEDURE [dbo].[SalesBillList]
+GO
+	CREATE PROCEDURE [dbo].[SalesBillList]
+    @pkID BIGINT=0,
+    @LoginUserID   NVARCHAR(20)=NULL,
+    @SearchKey   NVARCHAR(50)=NULL,
+    @PageNo INT = 0,
+    @PageSize INT = 0,
+    @TotalCount INT = 0 OUTPUT  
+AS
+BEGIN
+    SET NOCOUNT ON 
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+    Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+           @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+    From viewCompanyUsers
+    Where lower(UserID) = lower(@LoginUserID);
+    /* ---------------------------------------------------------------- */
+    DECLARE @SupervisorID BIGINT
+    DECLARE @StartNo INT
+    DECLARE @EndNo INT
+    SET @StartNo = (@PageNo * @PageSize) - (@PageSize - 1)
+    SET @EndNo = (@PageNo * @PageSize)
+    SET @SupervisorID = dbo.fnGetEmployeeIDByUserID(@LoginUserID);
+    /* -------------------------------------------------------------------- */
+    WITH CTE as 
+    (select  pkID,ReportTo,EmployeeName,1 as level
+    from OrganizationEmployee where pkID = @SupervisorID
+    union all
+    select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+    from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+    SELECT @TotalCount = (Select COUNT(*) From [SalesBill] 
+    Inner Join [MST_Customer] On [SalesBill].CustomerID = MST_Customer.CustomerID
+    WHERE (lower(@LoginUserID) = 'admin'))  
+    -- ----------------------------------------------------------------------------
+    IF (@SearchKey IS NOT NULL AND @SearchKey<>'')
+    BEGIN
+        WITH CTE as 
+        (select  pkID,ReportTo,EmployeeName,1 as level
+        from OrganizationEmployee where pkID = @EmployeeID
+        union all
+        select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+        from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+        Select *
+        From (SELECT ROW_NUMBER() OVER(ORDER BY InvoiceDate DESC, InvoiceNo DESC) AS RowNum,
+        qt.pkID, qt.InvoiceNo, qt.InvoiceDate, qt.BasicAmt,qt.DiscountAmt,(qt.CGSTAmt + qt.SGSTAmt + qt.IGSTAmt ) as "TaxAmt",
+        qt.ROffAmt,qt.NetAmt, qt.CGSTAmt, qt.SGSTAmt, qt.IGSTAmt,
+        qt.InquiryNo ,qt.OrderNo,qt.QuotationNo,qt.ComplaintNo, qt.RefType,qt.SupplierRef, qt.SupplierRefDate, qt.OtherRef,
+        COALESCE(qt.QuotationNo, qt.InquiryNo,qt.OrderNo,qt.ComplaintNo) as RefNo,
+        so.PatientName ,qt.PatientType ,qt.Amount ,qt.Percentage ,qt.EstimatedAmt,
+        qt.FixedLedgerID, dbo.fnGetCustomerName(qt.FixedLedgerID) As "FixedLedgerName",  
+        qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", qt.BankID,qt.LocationID,
+        bank.BankName,bank.BranchName,bank.BankAccountName,bank.BankAccountNo,bank.BankIFSC,bank.BankSWIFT,
+        qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+        dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+        dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+        dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+        dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+        dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+        qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+        qt.TerminationOfDeliery, dbo.fnGetStateName(qt.TerminationOfDeliery) As TerminationOfDelieryName,
+        qt.TerminationOfDelieryCity, dbo.fnGetCityName(qt.TerminationOfDelieryCity) As TerminationOfDelieryCityName,
+        qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+        qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+        ModeOfTransport,TransporterName,VehicleNo,DeliveryNote,DispatchDocNo,LRNo,LRDate,EwayBillNo,ModeOfPayment,TransportRemark,DeliverTo,
+        --cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+        --cust.ContactNo1, cust.ContactNo2,             
+        '' As CurrencyName, '' As CurrencySymbol, 1 As ExchangeRate, qt.TermsCondition,
+        qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, 
+        dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+        dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+        dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+        (Select Sum(Amount) From SalesBill_Detail qd Where qd.InvoiceNo = qt.InvoiceNo) As "BillAmount"
+        From [SalesBill] qt 
+        Inner Join viewCompanyUsers vcu On qt.CreatedBy = vcu.UserID
+        Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+        left join SalesOrder so on qt.OrderNo = so.OrderNo 
+        Left join OrganizationBankInfo bank on qt.BankID = bank.pkID
+        Where (lower(@UserRole) = 'admin')
+           Or (vcu.EmployeeID IN (Select pkID From CTE))
+        ) AS Temp
+        Where Concat(InvoiceNo, CustomerName, InquiryNo, QuotationNo) Like Concat('%',@SearchKey,'%');
+        /* ------------------------------------------------------------------------- */
+        SET @TotalCount = @@ROWCOUNT;
+        Return;
+    END
+    -- ----------------------------------------------------------------------------
+    BEGIN
+        IF(@pkID = '' or @pkID IS NULL or @pkID = 0)
+        BEGIN
+            WITH CTE as 
+            (select  pkID,ReportTo,EmployeeName,1 as level
+            from OrganizationEmployee where pkID = @EmployeeID
+            union all
+            select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+            from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+            Select *
+            From (SELECT ROW_NUMBER() OVER(ORDER BY InvoiceDate DESC, InvoiceNo DESC) AS RowNum,
+            qt.pkID, qt.InvoiceNo, qt.InvoiceDate, qt.BasicAmt,qt.DiscountAmt,(qt.CGSTAmt + qt.SGSTAmt + qt.IGSTAmt ) as "TaxAmt",
+            qt.ROffAmt,qt.NetAmt, qt.CGSTAmt, qt.SGSTAmt, qt.IGSTAmt,
+            qt.InquiryNo ,qt.OrderNo,qt.QuotationNo,qt.ComplaintNo, qt.RefType,
+            COALESCE(qt.QuotationNo, qt.InquiryNo,qt.OrderNo,qt.ComplaintNo) as RefNo,qt.SupplierRef, qt.SupplierRefDate, qt.OtherRef,
+            so.PatientName ,qt.PatientType ,qt.Amount ,qt.Percentage ,qt.EstimatedAmt,
+            qt.FixedLedgerID, dbo.fnGetCustomerName(qt.FixedLedgerID) As "FixedLedgerName",  
+            qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", qt.BankID,qt.LocationID,
+            bank.BankName,bank.BranchName,bank.BankAccountName,bank.BankAccountNo,bank.BankIFSC,bank.BankSWIFT,
+            qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+            dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+            dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+            dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+            dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+            dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+            qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+            qt.TerminationOfDeliery, dbo.fnGetStateName(qt.TerminationOfDeliery) As TerminationOfDelieryName,
+            qt.TerminationOfDelieryCity, dbo.fnGetCityName(qt.TerminationOfDelieryCity) As TerminationOfDelieryCityName,
+            qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+            qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+            ModeOfTransport,TransporterName,VehicleNo,DeliveryNote,LRNo,DispatchDocNo,LRDate,EwayBillNo,ModeOfPayment,TransportRemark,DeliverTo, 
+            --cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+            --cust.ContactNo1, cust.ContactNo2,             
+            '' As CurrencyName, '' As CurrencySymbol, 1 As ExchangeRate, qt.TermsCondition,
+            qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, 
+            dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+            dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+            dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+            (Select Sum(Amount) From SalesBill_Detail qd Where qd.InvoiceNo = qt.InvoiceNo) As "BillAmount"
+           From [SalesBill] qt 
+           Inner Join viewCompanyUsers vcu On qt.CreatedBy = vcu.UserID
+           Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+           left join SalesOrder so on qt.OrderNo = so.OrderNo 
+           left join OrganizationBankInfo bank on qt.BankID = bank.pkID
+           Where (lower(@UserRole) = 'admin')
+              Or (vcu.EmployeeID IN (Select pkID From CTE))
+           ) AS Temp
+           WHERE RowNum BETWEEN @StartNo AND @EndNo 
+        END
+        ELSE
+        BEGIN
+            Select *
+            From (SELECT ROW_NUMBER() OVER(ORDER BY InvoiceDate DESC, InvoiceNo DESC) AS RowNum,
+            qt.pkID, qt.InvoiceNo, qt.InvoiceDate, qt.SupplierRef, qt.SupplierRefDate, qt.OtherRef,qt.BasicAmt,qt.DiscountAmt,(qt.CGSTAmt + qt.SGSTAmt + qt.IGSTAmt ) as "TaxAmt",
+            qt.ROffAmt,qt.NetAmt, qt.CGSTAmt, qt.SGSTAmt, qt.IGSTAmt,
+            qt.FixedLedgerID, dbo.fnGetCustomerName(qt.FixedLedgerID) As "FixedLedgerName",  
+            qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", qt.BankID,qt.LocationID,
+            bank.BankName,bank.BranchName,bank.BankAccountName,bank.BankAccountNo,bank.BankIFSC,bank.BankSWIFT,
+            qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+            dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+            dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+            dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+            dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+            dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+            qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+            qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+            qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+            qt.TerminationOfDeliery, dbo.fnGetStateName(qt.TerminationOfDeliery) As TerminationOfDelieryName,
+            qt.TerminationOfDelieryCity, dbo.fnGetCityName(qt.TerminationOfDelieryCity) As TerminationOfDelieryCityName,
+            qt.InquiryNo ,qt.OrderNo,qt.QuotationNo,qt.ComplaintNo, qt.RefType,
+            COALESCE(qt.QuotationNo, qt.InquiryNo,qt.OrderNo,qt.ComplaintNo) as RefNo,
+            so.PatientName ,qt.PatientType ,qt.Amount ,qt.Percentage ,qt.EstimatedAmt,
+            ModeOfTransport,TransporterName,VehicleNo,DeliveryNote,LRNo,DispatchDocNo,LRDate,EwayBillNo,ModeOfPayment,TransportRemark,DeliverTo,
+            --cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+            --cust.ContactNo1, cust.ContactNo2, 
+            '' As CurrencyName, '' As CurrencySymbol, 1 As ExchangeRate, qt.TermsCondition,
+            qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, 
+            dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+            dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+            dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+            (Select Sum(Amount) From SalesBill_Detail qd Where qd.InvoiceNo = qt.InvoiceNo) As "BillAmount"
+           From [SalesBill] qt 
+           Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+           left join SalesOrder so on qt.OrderNo = so.OrderNo 
+           left join OrganizationBankInfo bank on qt.BankID = bank.pkID
+            Where qt.pkID = @pkID) AS Temp  
+            END
+    END
+END
+GO
+------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Payroll_INS_UPD')
+	DROP PROCEDURE [dbo].[Payroll_INS_UPD]
+GO
+	CREATE PROCEDURE [dbo].[Payroll_INS_UPD]
+	@pkID BIGINT,
+	@EmployeeID BIGINT,
+	@PayDate DateTime, 
+	@WDays BIGINT, 
+	@PDays Decimal(12,2),
+	@LDays Decimal(12,2),
+	@HDays Decimal(12,2),
+	@FixedSalary Decimal(12,2), 
+	@Basic Decimal(12,2), 
+	@Hra Decimal(12,2), 
+	@DA Decimal(12,2), 
+	@Conveyance Decimal(12,2), 
+	@Medical Decimal(12,2), 
+	@Special Decimal(12,2), 
+	@Total_Income Decimal(12,2), 
+	@PF Decimal(12,2), 
+	@ESI Decimal(12,2), 
+	@PT Decimal(12,2), 
+	@TDS Decimal(12,2), 
+	@Loan Decimal(12,2), 
+	@Total_Deduct Decimal(12,2),
+	@NetSalary Decimal(12,2),
+	@LoginUserID NVARCHAR(20),
+	@ReturnCode INT OUTPUT,
+	@ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+	BEGIN TRANSACTION ChkPoint
+	BEGIN TRY
+		SET @ReturnCode = 0;
+		SET @ReturnMsg = '';
+		/* ----------------------------------------------------- */		
+		IF (@ReturnCode >= 0) 
+		BEGIN
+			IF NOT EXISTS(SELECT * FROM Payroll WHERE pkID = @pkID)
+			BEGIN
+				INSERT INTO PAYROLL 
+				  (EmployeeID, PayDate, WDays, PDays,LDays,HDays, FixedSalary, Basic, Hra, DA, Conveyance, Medical, Special, Total_Income, PF, ESI, PT, TDS, Loan, Total_Deduct, NetSalary, CreatedBy, CreatedDate)
+				VALUES 
+				  (@EmployeeID, @PayDate, @WDays, @PDays,@LDays,@HDays, @FixedSalary, @Basic, @Hra, @DA, @Conveyance, @Medical, @Special, @Total_Income, @PF, @ESI, @PT, @TDS, @Loan, @Total_Deduct, @NetSalary, @LoginUserID, GETDATE())
+
+				SET @ReturnCode = 1
+				SET @ReturnMsg = 'Payslip Added Successfully'
+			END
+			ELSE 
+			BEGIN
+				UPDATE Payroll
+				SET EmployeeID = @EmployeeID,
+					PayDate = @PayDate, 
+					WDays = @WDays,
+					PDays = @PDays,
+					LDays = @LDays,
+					HDays = @HDays,
+					FixedSalary = @FixedSalary,  
+					Basic = @Basic, 
+					Hra = @Hra, 
+					DA = @DA, 
+					Conveyance = @Conveyance, 
+					Medical = @Medical, 
+					Special = @Special, 
+					Total_Income = @Total_Income, 
+					PF = @PF, 
+					ESI = @ESI, 
+					PT = @PT, 
+					TDS = @TDS, 
+					Loan = @Loan, 
+					Total_Deduct = @Total_Deduct, 
+					NetSalary = @NetSalary,
+					UpdatedBy = @LoginUserID,
+					UpdatedDate = GETDATE()
+				WHERE pkID = @pkID
+			
+				SET @ReturnCode = 2
+				SET @ReturnMsg = 'Payslip Updated Successfully'
+			END
+		END
+		-- Save New/Existing Record in Client Table		
+		COMMIT TRANSACTION  ChkPoint
+	END TRY	
+	BEGIN CATCH
+		ROLLBACK TRANSACTION ChkPoint
+
+		DECLARE @ErrorMessage NVARCHAR(4000);
+		DECLARE @ErrorSeverity INT;
+		DECLARE @ErrorState INT;
+
+		SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+
+
+		RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+		
+		SET @ReturnCode = 0
+		SET @ReturnMsg = 'Some Error in occure'
+	END CATCH
+	SELECT @ReturnCode, @ReturnMsg
+END
+GO
+---------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesOrderShortRemarkList')
+	DROP PROCEDURE [dbo].[SalesOrderShortRemarkList]
+GO
+	CREATE PROCEDURE [dbo].[SalesOrderShortRemarkList]
+    @OrderNo NVARCHAR(20)=NULL,
+    @QuotationNo NVARCHAR(20)=NULL,
+    @FinishProductID BIGINT=0,
+    @LoginUserID NVARCHAR(20)=null
+AS
+BEGIN
+    /* ----------------------------------------------------------------- */
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT;
+    SET @UserRole = dbo.fnUserRole(@LoginUserID);
+    SET @CompanyID = dbo.fnGetCompanyIDByUserID(@LoginUserID);
+    /* ----------------------------------------------------------------- */
+    IF((@OrderNo IS NULL OR @OrderNo = '') AND (@FinishProductID IS NULL OR @FinishProductID = 0))
+    BEGIN
+        IF ((@QuotationNo IS NULL OR @QuotationNo='') And (@FinishProductID IS NULL OR @FinishProductID=0))
+        BEGIN
+            SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY pkID ASC) AS RowNum,
+                    pkID AS ProductID, ProductSpecification
+            FROM MST_Product
+            Where pkID = 0) AS Temp
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS(SELECT * FROM Quotation_Detail Where QuotationNo = @QuotationNo
+            And Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then ProductID Else 1 End =
+                Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then @FinishProductID Else 1 End)
+            BEGIN
+                SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY pkID ASC) AS RowNum,
+                        pkID AS ProductID,ProductSpecification
+                FROM MST_Product
+                where pkID = @FinishProductID
+                ) AS Temp
+            END
+            ELSE
+            BEGIN
+                SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY Qd.pkID ASC) AS RowNum,
+                        ProductID,Qd.ProductSpecification
+                FROM Quotation_Detail Qd
+                Left Outer Join MST_Product it On ProductID = it.pkID
+                WHERE QuotationNo = @QuotationNo
+                    And Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then ProductID Else 1 End =
+                        Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then @FinishProductID Else 1 End
+                ) AS Temp
+            END
+        END
+    END
+    ELSE
+    BEGIN
+        IF NOT EXISTS(SELECT * FROM SalesOrder_Detail Where OrderNo = @OrderNo
+        And Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then ProductID Else 1 End =
+            Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then @FinishProductID Else 1 End)
+        BEGIN
+            SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY pkID ASC) AS RowNum,
+                    pkID AS ProductID,ProductSpecification
+            FROM MST_Product
+            where pkID = @FinishProductID
+            ) AS Temp
+        END
+        ELSE
+        BEGIN
+            SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY Qd.pkID ASC) AS RowNum,
+                ProductID,Qd.ProductSpecification
+            FROM SalesOrder_Detail Qd
+            Left Outer Join MST_Product it On ProductID = it.pkID
+            WHERE OrderNo = @OrderNo
+                And Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then ProductID Else 1 End =
+                    Case When (@FinishProductID<>0 And @FinishProductID IS NOT NULL) Then @FinishProductID Else 1 End
+            ) AS Temp
+        END
+    END
+END
+GO
+
+--------------------------------------------
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesBillDetail_INS_UPD')
+	DROP PROCEDURE [dbo].[SalesBillDetail_INS_UPD]
+GO
+	CREATE PROCEDURE [dbo].[SalesBillDetail_INS_UPD]
+	@pkID BIGINT,
+	@InvoiceNo NVARCHAR(20), 
+	@ProductID BIGINT,
+	@ProductSpecification NVARCHAR(MAX),
+	@LocationID BIGINT=NULL, 
+	@TaxType int,
+	@UnitQty DECIMAL(12,2)=0,
+	@Qty DECIMAL(12,2), 
+	@Unit NVARCHAR(10)=NULL, 
+	@Rate DECIMAL(12,2), 
+	@DiscountPer DECIMAL(12,2), 
+	@DiscountAmt DECIMAL(12,2), 
+	@NetRate DECIMAL(12,2), 
+	@Amount DECIMAL(12,2), 
+	@SGSTPer DECIMAL(12,2), 
+	@SGSTAmt DECIMAL(12,2), 
+	@CGSTPer DECIMAL(12,2), 
+	@CGSTAmt DECIMAL(12,2), 
+	@IGSTPer DECIMAL(12,2), 
+	@IGSTAmt DECIMAL(12,2), 
+	@AddTaxPer DECIMAL(12,2),
+	@AddTaxAmt DECIMAL(12,2),
+	@NetAmt DECIMAL(12,2), 
+	@HeaderDiscAmt decimal(12,2),
+	@ForOrderNo NVARCHAR(20)=NULL,
+	@LoginUserID NVARCHAR(20)=NULL,
+	@ReturnCode INT OUTPUT,
+	@ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+	BEGIN TRANSACTION ChkPoint
+	BEGIN TRY
+		DECLARE	@return_value int, @ReturnCode1 int, @ReturnMsg1 nvarchar(255), @StockFlag NVARCHAR(50),@LocationWiseStockFlag NVARCHAR(10)
+		Select @StockFlag = dbo.fnGetConstant('StockOutward',1);
+		Select @LocationWiseStockFlag = dbo.fnGetConstant('LocationWiseStock',1);
+		/* --------------------------------------------------------------------- */
+
+		IF NOT EXISTS(SELECT * FROM SalesOrder_Detail WHERE pkID = @pkID)
+		BEGIN
+			INSERT INTO SalesBill_Detail
+			 (InvoiceNo, ProductID,TaxType,UnitQty, Qty,Unit,Rate, DiscountPer, DiscountAmt,NetRate, Amount, SGSTPer, SGSTAmt, 
+			 CGSTPer, CGSTAmt, IGSTPer, IGSTAmt,AddTaxPer,AddTaxAmt, NetAmt, HeaderDiscAmt, ForOrderNo, LocationID, ProductSpecification, CreatedBy, CreatedDate)
+			VALUES 
+			  (@InvoiceNo, @ProductID,@TaxType,@UnitQty, @Qty,@Unit,@Rate, @DiscountPer,@DiscountAmt , @NetRate, @Amount, @SGSTPer, @SGSTAmt, 
+			  @CGSTPer, @CGSTAmt, @IGSTPer, @IGSTAmt,@AddTaxPer,@AddTaxAmt, @NetAmt, @HeaderDiscAmt, @ForOrderNo, @LocationID, @ProductSpecification, @LoginUserID, GETDATE())
+			/* --------------------------------------------------------- */
+			IF (@StockFlag = 'sale' Or @StockFlag IS NULL Or @StockFlag='')
+			BEGIN
+				EXEC @return_value = SendStockTransaction @ProductID = @ProductID, @TransQuantity = @Qty, @TransType = 'OUT', @ReturnCode = @ReturnCode1 OUTPUT, @ReturnMsg = @ReturnMsg1 OUTPUT;
+				IF (Lower(@LocationWiseStockFlag) = 'yes' And @LocationID IS NOT NULL And @LocationID<>0)
+				BEGIN
+					EXEC @return_value = SendStockTransactionWithLocation @ProductID = @ProductID, @LocationID = @LocationID, @TransQuantity = @Qty, @TransType = 'OUT', @ReturnCode = @ReturnCode1 OUTPUT, @ReturnMsg = @ReturnMsg1 OUTPUT;
+				END
+			END
+			/* --------------------------------------------------------- */
+			SET @ReturnCode = 1
+			SET @ReturnMsg = 'Sales Bill Detail Added Successfully !'
+		END
+		ELSE 
+		BEGIN
+			/* --------------------------------------------------------- */
+			UPDATE SalesBill_Detail
+			SET InvoiceNo=@InvoiceNo, ProductID=@ProductID,TaxType = @TaxType,UnitQty=@UnitQty, Qty=@Qty,Unit=@Unit,Rate=@Rate, 
+			    DiscountPer=@DiscountPer,DiscountAmt=@DiscountAmt,NetRate=@NetRate, Amount=@Amount, SGSTPer=@SGSTPer, SGSTAmt=@SGSTAmt, 
+			    CGSTPer=@CGSTPer, CGSTAmt=@CGSTAmt, IGSTPer=@IGSTPer, IGSTAmt=@IGSTAmt, 
+			    AddTaxPer = @AddTaxPer,AddTaxAmt = @AddTaxAmt,NetAmt=@NetAmt,HeaderDiscAmt=@HeaderDiscAmt, ForOrderNo = @ForOrderNo,LocationID=@LocationID,
+				ProductSpecification = @ProductSpecification,UpdatedBy = @LoginUserID, UpdatedDate = GETDATE()
+			WHERE pkID = @pkID;
+			/* --------------------------------------------------------- */
+			
+			SET @ReturnCode = 2
+			SET @ReturnMsg = 'Sales Bill Detail Updated Successfully !'
+		END
+		-- Save New/Existing Record in Client Table		
+		COMMIT TRANSACTION  ChkPoint
+	END TRY	
+	BEGIN CATCH
+		ROLLBACK TRANSACTION ChkPoint
+
+		DECLARE @ErrorMessage NVARCHAR(4000);
+		DECLARE @ErrorSeverity INT;
+		DECLARE @ErrorState INT;
+
+		SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+
+
+		RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+		
+		SET @ReturnCode = 0
+		SET @ReturnMsg = 'Some Error in occure'
+	END CATCH
+	SELECT @ReturnCode, @ReturnMsg
+END
+GO
+
+--------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'QuotationDetail_INS_UPD')
+	DROP PROCEDURE [dbo].[QuotationDetail_INS_UPD]
+GO
+	CREATE PROCEDURE [dbo].[QuotationDetail_INS_UPD]
+	@pkID BIGINT,
+	@QuotationNo NVARCHAR(20),
+	@ProductID BIGINT,
+	@ProductSpecification NVARCHAR(MAX)=NULL,
+	@TaxType int,
+	@UnitQty DECIMAL(12,2)=0,
+	@Quantity DECIMAL(12,2),
+	@Unit NVARCHAR(10)=NULL,
+	@UnitRate DECIMAL(12,2),
+	@DiscountPercent DECIMAL(12,2),
+	@NetRate DECIMAL(12,2),
+	@Amount DECIMAL(12,2),
+	@TaxRate DECIMAL(12,2),
+	@TaxAmount DECIMAL(12,2),
+	@NetAmount DECIMAL(12,2),
+	@BundleId bigint=null,
+	  @DiscountAmt DECIMAL(12,2),
+      @SGSTPer DECIMAL(12,2),
+      @SGSTAmt DECIMAL(12,2),
+      @CGSTPer DECIMAL(12,2),
+      @CGSTAmt DECIMAL(12,2),
+      @IGSTPer DECIMAL(12,2),
+      @IGSTAmt DECIMAL(12,2),
+	  @HeaderDiscAmt decimal(12,2),
+	@LoginUserID NVARCHAR(20)=NULL,
+	@ReturnCode INT OUTPUT,
+	@ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+	BEGIN TRANSACTION ChkPoint
+	BEGIN TRY
+
+		IF NOT EXISTS(SELECT * FROM Quotation_Detail WHERE pkID = @pkID)
+		BEGIN
+			INSERT INTO Quotation_Detail
+			  (QuotationNo, ProductID,TaxType,UnitQty, Quantity, Unit, UnitRate, DiscountPercent,DiscountAmt,
+			  SGSTPer, SGSTAmt, CGSTPer, CGSTAmt, IGSTPer, IGSTAmt ,
+			  NetRate, Amount, TaxRate, TaxAmount, NetAmount,HeaderDiscAmt, BundleId,ProductSpecification,CreatedBy, CreatedDate)
+			VALUES
+			  (@QuotationNo, @ProductID,@TaxType,@UnitQty, @Quantity, UPPER(@Unit), @UnitRate, @DiscountPercent,@DiscountAmt,
+			  @SGSTPer, @SGSTAmt, @CGSTPer, @CGSTAmt, @IGSTPer, @IGSTAmt ,
+			  @NetRate, @Amount, @TaxRate, @TaxAmount, @NetAmount,@HeaderDiscAmt, @BundleId,@ProductSpecification,@LoginUserID, GETDATE())
+			/* ------------------------------------------------------------------*/
+			Declare @cntOutOfRange BIGINT;
+			Select @cntOutOfRange = Count(*) 
+			From MST_Notification 
+			Where Day(CreatedDate) = Day(getdate()) And Month(CreatedDate) = Month(getdate()) And Year(CreatedDate) = Year(getdate())
+			   And Description like 'Quotation ' + @QuotationNo + ' Of Lower/Higer Rate' + '%' 
+			IF (@cntOutOfRange<=0)
+			BEGIN
+				Declare @ReturnCode1 INT
+				Declare @ReturnMsg1 NVARCHAR(255), @Message NVARCHAR(200)
+				IF EXISTS (SELECT * FROM MST_Product pr WHERE @UnitRate<pr.Min_UnitPrice Or @UnitRate>pr.Max_UnitPrice)
+				BEGIN
+					SET @Message = 'Quotation ' + @QuotationNo + ' Of Lower/Higer Rate Generated By ' + @LoginUserID;
+					EXECUTE Mst_Notification_INS_UPD @ModuleName='Quotation', 
+						@Description= @Message, 
+						@LoginUserID = @LoginUserID, 
+						@ReturnCode  = @ReturnCode1 OUTPUT, 
+						@ReturnMsg   = @ReturnMsg1 OUTPUT;
+				END
+			END
+			/* ------------------------------------------------------------------*/
+			SET @ReturnCode = 1
+			SET @ReturnMsg = 'Quotation Detail Added Successfully !'
+		END
+		ELSE
+		BEGIN
+			UPDATE Quotation_Detail
+			SET QuotationNo = @QuotationNo,
+				ProductID = @ProductID,
+				TaxType=@TaxType,
+				Quantity = @Quantity,
+				UnitQty = @UnitQty,
+				Unit = UPPER(@Unit),
+				UnitRate = @UnitRate,
+				DiscountPercent = @DiscountPercent,
+				DiscountAmt=@DiscountAmt,
+				SGSTPer=@SGSTPer, SGSTAmt=@SGSTAmt,
+			    CGSTPer=@CGSTPer, CGSTAmt=@CGSTAmt, IGSTPer=@IGSTPer, IGSTAmt=@IGSTAmt,
+				NetRate = @NetRate,
+				Amount = @Amount,
+				TaxRate = @TaxRate,
+				TaxAmount = @TaxAmount,
+				NetAmount = @NetAmount,
+				HeaderDiscAmt=@HeaderDiscAmt,
+				BundleId=@BundleId,
+				ProductSpecification = @ProductSpecification,
+				UpdatedBy = @LoginUserID, UpdatedDate = GETDATE()
+			WHERE pkID = @pkID;
+			SET @ReturnCode = 2
+			SET @ReturnMsg = 'Quotation Detail Updated Successfully !'
+		END
+		-- Save New/Existing Record in Client Table		
+		COMMIT TRANSACTION  ChkPoint
+	END TRY	
+	BEGIN CATCH
+		ROLLBACK TRANSACTION ChkPoint
+		DECLARE @ErrorMessage NVARCHAR(4000);
+		DECLARE @ErrorSeverity INT;
+		DECLARE @ErrorState INT;
+		SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+		RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+		SET @ReturnCode = 0
+		SET @ReturnMsg = 'Some Error in occure'
+	END CATCH
+	SELECT @ReturnCode, @ReturnMsg
+END
+GO
+
+---------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SalesOrderDetail_INS_UPD')
+	DROP PROCEDURE [dbo].[SalesOrderDetail_INS_UPD]
+GO
+	CREATE PROCEDURE [dbo].[SalesOrderDetail_INS_UPD]
+    @pkID BIGINT,
+    @OrderNo NVARCHAR(20),
+    @ProductID BIGINT,
+    @ProductSpecification NVARCHAR(MAX)=NULL,
+    @TaxType int,
+	@UnitQty DECIMAL(12,2)=0,
+    @Quantity DECIMAL(12,2),
+    @Unit NVARCHAR(10)=NULL,
+    @UnitRate DECIMAL(12,2),
+    @DiscountPercent DECIMAL(12,2),
+    @NetRate DECIMAL(12,2),
+    @Amount DECIMAL(12,2),
+    @TaxRate DECIMAL(12,2),
+    @TaxAmount DECIMAL(12,2),
+    @NetAmount DECIMAL(12,2),
+    @DeliveryDate DateTime=NULL,
+    @DiscountAmt DECIMAL(12,2),
+    @SGSTPer DECIMAL(12,2),
+    @SGSTAmt DECIMAL(12,2),
+    @CGSTPer DECIMAL(12,2),
+    @CGSTAmt DECIMAL(12,2),
+    @IGSTPer DECIMAL(12,2),
+    @IGSTAmt DECIMAL(12,2),
+    @HeaderDiscAmt decimal(12,2),
+    @LoginUserID NVARCHAR(20)=NULL,
+    @ReturnCode INT OUTPUT,
+    @ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+    BEGIN TRANSACTION ChkPoint
+    BEGIN TRY
+        IF NOT EXISTS(SELECT * FROM SalesOrder_Detail WHERE pkID = @pkID)
+        BEGIN
+            INSERT INTO SalesOrder_Detail
+              (OrderNo, ProductID,TaxType,UnitQty, Quantity, Unit, UnitRate, DiscountPercent,DiscountAmt, SGSTPer, SGSTAmt,
+               CGSTPer, CGSTAmt, IGSTPer, IGSTAmt , NetRate, Amount, TaxRate, TaxAmount,
+               NetAmount,DeliveryDate,HeaderDiscAmt,ProductSpecification, CreatedBy, CreatedDate)
+            VALUES
+             (@OrderNo, @ProductID,@TaxType,@UnitQty, @Quantity, UPPER(@Unit), @UnitRate, @DiscountPercent,@DiscountAmt, @SGSTPer, @SGSTAmt,
+              @CGSTPer, @CGSTAmt, @IGSTPer, @IGSTAmt , @NetRate, @Amount, @TaxRate, @TaxAmount,
+              @NetAmount,@DeliveryDate,@HeaderDiscAmt,@ProductSpecification, @LoginUserID, GETDATE())
+            /* ------------------------------------------------------------------*/
+            Declare @cntOutOfRange BIGINT;
+            Select @cntOutOfRange = Count(*)
+            From MST_Notification
+            Where Day(CreatedDate) = Day(getdate()) And Month(CreatedDate) = Month(getdate()) And Year(CreatedDate) = Year(getdate())
+               And Description like 'Sale Order ' + @OrderNo + ' Of Lower/Higer Rate' + '%'
+            IF (@cntOutOfRange<=0)
+            BEGIN
+                Declare @ReturnCode1 INT
+                Declare @ReturnMsg1 NVARCHAR(255), @Message NVARCHAR(200)
+                IF EXISTS (SELECT * FROM MST_Product pr WHERE @UnitRate<pr.Min_UnitPrice Or @UnitRate>pr.Max_UnitPrice)
+                BEGIN
+                    SET @Message = 'Sale Order ' + @OrderNo + ' Of Lower/Higer Rate Generated By ' + @LoginUserID ;
+                    EXECUTE Mst_Notification_INS_UPD @ModuleName='Sale Order',
+                        @Description= @Message,
+                        @LoginUserID = @LoginUserID,
+                        @ReturnCode  = @ReturnCode1 OUTPUT,
+                        @ReturnMsg   = @ReturnMsg1 OUTPUT;
+                END
+            END
+            /* ------------------------------------------------------------------*/
+            SET @ReturnCode = 1
+            SET @ReturnMsg = 'Sales Order Detail Added Successfully !'
+        END
+        ELSE
+        BEGIN
+            UPDATE SalesOrder_Detail
+            SET OrderNo = @OrderNo,
+                ProductID = @ProductID,
+                TaxType=@TaxType,
+				UnitQty=@UnitQty,
+                Quantity = @Quantity,
+                Unit = UPPER(@Unit),
+                UnitRate = @UnitRate,
+                DiscountPercent = @DiscountPercent,
+                DiscountAmt=@DiscountAmt,
+                SGSTPer=@SGSTPer, SGSTAmt=@SGSTAmt,
+                CGSTPer=@CGSTPer, CGSTAmt=@CGSTAmt, IGSTPer=@IGSTPer, IGSTAmt=@IGSTAmt,
+                NetRate = @NetRate,
+                Amount = @Amount,
+                TaxRate = @TaxRate,
+                TaxAmount = @TaxAmount,
+                NetAmount = @NetAmount,
+                DeliveryDate = @DeliveryDate,
+                HeaderDiscAmt=@HeaderDiscAmt,
+        ProductSpecification=@ProductSpecification,
+                UpdatedBy = @LoginUserID, UpdatedDate = GETDATE()
+            WHERE pkID = @pkID;
+            SET @ReturnCode = 2
+            SET @ReturnMsg = 'Sales Order Detail Updated Successfully !'
+        END
+        -- Save New/Existing Record in Client Table
+        COMMIT TRANSACTION  ChkPoint
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION ChkPoint
+        DECLARE @ErrorMessage NVARCHAR(4000);
+        DECLARE @ErrorSeverity INT;
+        DECLARE @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+        SET @ReturnCode = 0
+        SET @ReturnMsg = 'Some Error in occure'
+    END CATCH
+    SELECT @ReturnCode, @ReturnMsg
+END
+GO
+
+------------------------------------Followed Stored Procedure is for Purchase Order Approval---------------------------------------------------
+
+
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderListByUser')
+	DROP PROCEDURE [dbo].[PurchaseOrderListByUser]
+Go
+	CREATE  PROCEDURE [dbo].[PurchaseOrderListByUser] 
+    @CustomerID BIGINT=0,
+    @LoginUserID NVARCHAR(20)=NULL,
+    @ApprovalStatus NVARCHAR(20)=NULL,
+    @Month BIGINT = 0,
+    @Year BIGINT = 0        
+AS
+BEGIN
+    SET NOCOUNT ON 
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+    Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+           @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+    From viewCompanyUsers
+    Where lower(UserID) = lower(@LoginUserID);
+    /* ---------------------------------------------------------------- */
+    DECLARE @SupervisorID BIGINT
+    DECLARE @StartNo INT
+    DECLARE @EndNo INT
+    
+    SET @SupervisorID = dbo.fnGetEmployeeIDByUserID(@LoginUserID);
+    /* -------------------------------------------------------------------- */
+    SELECT *
+    FROM (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate DESC, OrderNo DESC) AS RowNum,
+        qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo, qt.InquiryNo,  qt.BillNo, 
+        qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+        qt.TermsCondition, qt.ApprovalStatus, 
+        qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+        cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+        cust.ContactNo1, cust.ContactNo2, 
+        qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+        qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+        qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+        qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+        dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+        dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+        dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+        dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+        dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+        qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+        qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+        qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+        qt.NetAmt,AdvancePer,AdvanceAmt,qt.ProjectName, qt.TankerNo, qt.Gross_Weight,
+        qt.Tare_Weight,qt.Net_Weight,qt.LicenseNo,qt.DriverDetails,qt.DriverName,
+        qt.DrivingLicenseNo,qt.DriverNumber,qt.ConductorName,qt.ModeOfPayment,qt.TransporterName,
+        qt.ConsigneeName,qt.ConsigneeAddress,qt.TripDistance,
+        qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+        dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+        dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+        dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+        (Select Sum(Amount) From SalesOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount"
+        
+    From [PurchaseOrder] qt Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+    Where (Case When (@CustomerID=0 Or @CustomerID IS NULL) Then 1 Else qt.CustomerID End = 
+           Case When (@CustomerID=0 Or @CustomerID IS NULL) Then 1 Else @CustomerID End)
+        And ((Case When (@Month<>0) Then Month(OrderDate) Else 1 End = Case When (@Month<>0) Then @Month Else 1 End) 
+        And (Case When (@Year<>0) Then Year(OrderDate) Else 1 End = Case When (@Year<>0) Then @Year Else 1 End))
+        And (Case When (@ApprovalStatus IS NULL OR @ApprovalStatus='') Then 'a' Else lower(qt.ApprovalStatus) End = 
+            Case When (@ApprovalStatus IS NULL OR @ApprovalStatus='') Then 'a' Else lower(@ApprovalStatus) End)
+    ) AS Temp;
+END
+
+---------------------------------------------------------------------------------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderApproval_UPD')
+	DROP PROCEDURE [dbo].[PurchaseOrderApproval_UPD]
+GO
+	CREATE PROCEDURE [dbo].[PurchaseOrderApproval_UPD]
+    @pkID BIGINT,
+    @ApprovalStatus NVARCHAR(10), 
+    @LoginUserID NVARCHAR(20),
+    @ReturnCode INT OUTPUT,
+    @ReturnMsg NVARCHAR(255) OUTPUT
+AS
+BEGIN
+    BEGIN TRANSACTION ChkPoint
+    BEGIN TRY
+        Declare @Description nvarchar(100);
+        Declare @pCustomerID nvarchar(100);
+        Declare @pApprovalStatus nvarchar(20);
+        IF (@pkID <> 0 And @ApprovalStatus IS NOT NULL And @ApprovalStatus<>'')
+        BEGIN
+            select @pCustomerID=CustomerID,@pApprovalStatus=ApprovalStatus from PurchaseOrder WHERE pkID = @pkID; 
+            IF (@pApprovalStatus<>@ApprovalStatus)
+            BEGIN
+                UPDATE PurchaseOrder
+                SET ApprovalStatus = @ApprovalStatus,  
+                    ApprovedBy = @LoginUserID, 
+                    ApprovedDate = GETDATE()
+                WHERE pkID = @pkID;
+                /* ------------------------------------------------------------- */
+                /* Sending Notification */      
+                /* ------------------------------------------------------------- */
+                SET @Description='Purchase Order ' + @ApprovalStatus +' For ' + [dbo].fnGetCustomerName(@pCustomerID);          
+                EXECUTE Mst_Notification_INS_UPD @ModuleName='Purchase Order',@Description=@Description,@LoginUserID=@LoginUserID,@ReturnCode=@ReturnCode OUTPUT,@ReturnMsg=@ReturnMsg OUTPUT;
+            END
+            /* --------------------------------------------------------- */
+            SET @ReturnCode = 2
+            SET @ReturnMsg = 'Purchase Order Status Updated Successfully !'
+        END
+        -- Save New/Existing Record in Client Table     
+        COMMIT TRANSACTION  ChkPoint
+    END TRY 
+    BEGIN CATCH
+        ROLLBACK TRANSACTION ChkPoint
+        DECLARE @ErrorMessage NVARCHAR(4000);
+        DECLARE @ErrorSeverity INT;
+        DECLARE @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+        
+        SET @ReturnCode = 0
+        SET @ReturnMsg = 'Some Error in occure'
+    END CATCH
+    SELECT @ReturnCode, @ReturnMsg
+END
+--------------------------------------------------------------QuotationList Changes-------------------------------------------------------
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'QuotationList')
+	DROP PROCEDURE [dbo].[QuotationList]
+Go
+
+Create PROCEDURE [dbo].[QuotationList] 
+	@pkID BIGINT=0,
+	@LoginUserID NVARCHAR(20)=NULL,
+	@SearchKey NVARCHAR(50)=NULL,
+	@PageNo INT = 0,
+	@PageSize INT = 0,
+	@SerialKey nvarchar(100) = NULL,
+	@TotalCount INT = 0 OUTPUT	
+AS
+BEGIN
+	SET NOCOUNT ON 
+	Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+
+	Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+	       @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+	From viewCompanyUsers
+	Where lower(UserID) = lower(@LoginUserID);
+	/* ---------------------------------------------------------------- */		
+	DECLARE @StartNo INT
+	DECLARE @EndNo INT
+	SET @StartNo = (@PageNo * @PageSize) - (@PageSize - 1)
+	SET @EndNo = (@PageNo * @PageSize)
+	
+	SET @TotalCount = (Select COUNT(*) From [Quotation] Inner Join [MST_Customer] On Quotation.CustomerID = MST_Customer.CustomerID)	
+	-- ----------------------------------------------------------------------------
+	IF (@SearchKey IS NOT NULL AND @SearchKey<>'')
+	BEGIN
+		WITH CTE as 
+            (select  pkID,ReportTo,EmployeeName,1 as level
+            from OrganizationEmployee where pkID = @EmployeeID
+            union all
+            select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+            from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+		Select *
+		From (SELECT ROW_NUMBER() OVER(ORDER BY QuotationDate DESC, QuotationNo DESC) AS RowNum,
+			qt.pkID, qt.QuotationNo, qt.QuotationDate, qt.InquiryNo, inq.pkID As "InquirypkID",inq.InquiryDate, qt.ProjectName,  
+			qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName",
+			cust.Address, cust.Area, cust.PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+			dbo.fnGetStateName(cust.StateCode) As "State",
+			qt.BankID, ob.BankName,ob.BranchName,ob.BankAccountNo,ob.BankIFSC,ob.BankSWIFT,ob.BankAccountName,
+			cust.ContactNo1, cust.ContactNo2, 
+			qt.QuotationSubject, qt.QuotationKindAttn, qt.QuotationHeader, qt.QuotationFooter, qt.AssumptionRemark, qt.AdditionalRemark,
+			qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+		qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+		qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+		dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+		dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+		dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+		dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+		dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+		qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+		qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+		qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+		qt.NetAmt, 
+		qt.CurrencyName, qt.CurrencySymbol, qt.ExchangeRate,
+			qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate,
+			dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName", Emp.MobileNo as "CreatedEmployeeMobileNo",
+			dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+			dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+			(Select Sum(Amount) From Quotation_Detail qd Where qd.QuotationNo = qt.QuotationNo) As "QuotationAmount",
+			inqst.InquiryStatus				 
+		From [Quotation] qt 
+		Inner Join viewCompanyUsers vcu On qt.CreatedBy = vcu.UserID
+		Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+		Left Outer Join Inquiry inq On qt.InquiryNo = inq.InquiryNo
+		Left Outer Join MST_InquiryStatus inqst On inq.InquiryStatusID = inqst.pkID
+		inner join OrganizationEmployee Emp on vcu.EmployeeID = Emp.pkID
+		Left Outer Join OrganizationBankInfo ob on qt.BankID = ob.pkID
+		Where Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(qt.CreatedBy) End = 
+			  Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(@LoginUserID) End
+		   Or (vcu.EmployeeID IN (Select pkID From CTE))
+		) AS Temp
+		Where Concat(CustomerName, QuotationNo, InquiryNo, InquiryStatus, QuotationAmount, CreatedEmployeeName) Like Concat('%',@SearchKey,'%');
+		/* ------------------------------------------------------------------------- */
+		SET @TotalCount = @@ROWCOUNT;
+		Return;
+	END
+	-- ----------------------------------------------------------------------------
+	BEGIN
+		IF(@pkID = '' or @pkID IS NULL or @pkID = 0)
+		BEGIN
+			IF @SerialKey ='R3JA-OMMK-TMYG-DGJJ'
+			BEGIN
+				Select top 1000 *
+				From (SELECT ROW_NUMBER() OVER(ORDER BY QuotationDate DESC, QuotationNo DESC) AS RowNum,
+					qt.pkID, qt.QuotationNo, qt.QuotationDate, qt.InquiryNo, inq.pkID As "InquirypkID",inq.InquiryDate, qt.ProjectName,  
+					qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName",
+					cust.Address, cust.Area, cust.PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+					dbo.fnGetStateName(cust.StateCode) As "State",
+					qt.BankID, ob.BankName,ob.BranchName,ob.BankAccountNo,ob.BankIFSC,ob.BankSWIFT,ob.BankAccountName,
+					cust.ContactNo1, cust.ContactNo2, 
+					qt.QuotationSubject, qt.QuotationKindAttn, qt.QuotationHeader, qt.QuotationFooter, qt.AssumptionRemark, qt.AdditionalRemark,
+					qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+				qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+				qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+				dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+				dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+				dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+				dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+				dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+				qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+				qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+				qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+				qt.NetAmt, 
+				qt.CurrencyName, qt.CurrencySymbol, qt.ExchangeRate,
+					qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate,
+					dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName", Emp.MobileNo as "CreatedEmployeeMobileNo",
+					dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+					dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+					(Select Sum(Amount) From Quotation_Detail qd Where qd.QuotationNo = qt.QuotationNo) As "QuotationAmount",
+					inqst.InquiryStatus				 
+				From [Quotation] qt 
+				Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+				Left Outer Join Inquiry inq On qt.InquiryNo = inq.InquiryNo
+				Left Outer Join MST_InquiryStatus inqst On inq.InquiryStatusID = inqst.pkID
+				inner join OrganizationEmployee Emp on dbo.fnGetEmployeeIDByUserID(qt.CreatedBy) = Emp.pkID
+				Left Outer Join OrganizationBankInfo ob on qt.BankID = ob.pkID
+				Where Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(qt.CreatedBy) End = 
+					  Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(@LoginUserID) End) AS Temp
+				WHERE RowNum BETWEEN @StartNo AND @EndNo; 
+			END
+			ELSE
+			BEGIN
+				WITH CTE as 
+				(select  pkID,ReportTo,EmployeeName,1 as level
+				from OrganizationEmployee where pkID = @EmployeeID
+				union all
+				select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+				from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+				Select *
+				From (SELECT ROW_NUMBER() OVER(ORDER BY QuotationDate DESC, QuotationNo DESC) AS RowNum,
+				qt.pkID, qt.QuotationNo, qt.QuotationDate, qt.InquiryNo, inq.pkID As "InquirypkID",inq.InquiryDate, qt.ProjectName,  
+				qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName",
+				cust.Address, cust.Area, cust.PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+				dbo.fnGetStateName(cust.StateCode) As "State",
+				qt.BankID, ob.BankName,ob.BranchName,ob.BankAccountNo,ob.BankIFSC,ob.BankSWIFT,ob.BankAccountName,
+				cust.ContactNo1, cust.ContactNo2, 
+				qt.QuotationSubject, qt.QuotationKindAttn, qt.QuotationHeader, qt.QuotationFooter, qt.AssumptionRemark, qt.AdditionalRemark,
+				qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+			qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+			qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+			dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+			dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+			dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+			dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+			dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+			qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+			qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+			qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+			qt.NetAmt, 
+			qt.CurrencyName, qt.CurrencySymbol, qt.ExchangeRate,
+				qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate,
+				dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",Emp.MobileNo as "CreatedEmployeeMobileNo",
+				dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+				dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+				(Select Sum(Amount) From Quotation_Detail qd Where qd.QuotationNo = qt.QuotationNo) As "QuotationAmount",
+				inqst.InquiryStatus				 
+			From [Quotation] qt 
+			Inner Join viewCompanyUsers vcu On qt.CreatedBy = vcu.UserID
+			Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+			Left Outer Join Inquiry inq On qt.InquiryNo = inq.InquiryNo
+			Left Outer Join MST_InquiryStatus inqst On inq.InquiryStatusID = inqst.pkID
+			inner join OrganizationEmployee Emp on dbo.fnGetEmployeeIDByUserID(qt.CreatedBy) = Emp.pkID
+			Left Outer Join OrganizationBankInfo ob on qt.BankID = ob.pkID
+			Where Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(qt.CreatedBy) End = 
+				  Case When (@LoginUserID IS NULL OR @LoginUserID='' OR lower(@UserRole) = 'admin') Then 'a' Else lower(@LoginUserID) End
+			   Or (vcu.EmployeeID IN (Select pkID From CTE))
+			) AS Temp
+			WHERE RowNum BETWEEN @StartNo AND @EndNo 
+			END
+			/* ------------------------------------------------------------------------- */
+			SET @TotalCount = @@ROWCOUNT;
+			Return;
+		END
+		ELSE
+		BEGIN
+			SELECT *
+			FROM (SELECT ROW_NUMBER() OVER(ORDER BY QuotationDate DESC,QuotationNo DESC) AS RowNum,
+				qt.pkID, qt.QuotationNo, qt.QuotationDate, qt.InquiryNo, inq.pkID As "InquirypkID",inq.InquiryDate, qt.ProjectName,  
+				qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+				cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+				dbo.fnGetStateName(cust.StateCode) As "State",
+				qt.BankID, ob.BankName,ob.BranchName,ob.BankAccountNo,ob.BankIFSC,ob.BankSWIFT,ob.BankAccountName,
+				cust.ContactNo1, cust.ContactNo2, 
+				qt.QuotationSubject, qt.QuotationKindAttn, qt.QuotationHeader, qt.QuotationFooter, qt.AssumptionRemark, qt.AdditionalRemark,
+				qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+			qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+			qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+			dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+			dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+			dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+			dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+			dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+			qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+			qt.ChargeBasicAmt1,qt.ChargeBasicAmt2,qt.ChargeBasicAmt3,qt.ChargeBasicAmt4,qt.ChargeBasicAmt5,
+			qt.ChargeGSTAmt1,qt.ChargeGSTAmt2,qt.ChargeGSTAmt3,qt.ChargeGSTAmt4,qt.ChargeGSTAmt5,
+			qt.NetAmt,
+			qt.CurrencyName, qt.CurrencySymbol, qt.ExchangeRate, 
+				qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate,
+				dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",Emp.MobileNo as "CreatedEmployeeMobileNo",
+				dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+				dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+				(Select Sum(Amount) From Quotation_Detail qd Where qd.QuotationNo = qt.QuotationNo) As "QuotationAmount",
+				inqst.InquiryStatus 
+			From [Quotation] qt 
+			Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+			Left Outer Join Inquiry inq On qt.InquiryNo = inq.InquiryNo
+			Left Outer Join MST_InquiryStatus inqst On inq.InquiryStatusID = inqst.pkID
+			inner join OrganizationEmployee Emp on dbo.fnGetEmployeeIDByUserID(qt.CreatedBy) = Emp.pkID
+			Left Outer Join OrganizationBankInfo ob on qt.BankID = ob.pkID
+			Where qt.pkID = @pkID
+			) AS Temp;
+
+			/* ------------------------------------------------------------------------- */
+			SET @TotalCount = @@ROWCOUNT;
+			Return;
+		END
+	END
+END
+
+-----------------------------------------------Two Fields in purchase order for ShivSai--------------------------------
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrder_INS_UPD')
+	DROP PROCEDURE [dbo].[PurchaseOrder_INS_UPD]
+GO
+	Create PROCEDURE [dbo].[PurchaseOrder_INS_UPD]
+    @pkID BIGINT,
+    @OrderNo NVARCHAR(20), 
+    @OrderDate DATETIME, 
+    @CustomerID BIGINT, 
+    @QuotationNo NVARCHAR(20) =null,
+    @InquiryNo NVARCHAR(20) =null, 
+	@BuyerRef NVARCHAR(50) =null,
+    @BillNo  NVARCHAR(50) =null, 
+    @TermsCondition NVARCHAR(MAX) = NULL,
+    @EmployeeID BIGINT,
+    @ApprovalStatus NVARCHAR(20),
+    @ProjectName NVARCHAR(50),
+    @PatientName NVARCHAR(50)='', 
+    @PatientType NVARCHAR(50)='',
+    @FinalAmount decimal(12,2) = 0,
+    @Percentage decimal(12,2) = 0,
+    @EstimatedAmt decimal(12,2) = 0,
+    @BasicAmt decimal(12,2),
+    @DiscountAmt decimal(12,2),
+    @SGSTAmt decimal(12,2),
+    @CGSTAmt decimal(12,2),
+    @IGSTAmt decimal(12,2),
+    @ROffAmt decimal(12,2),
+    @TankerNo NVARCHAR(50),
+    @Gross_Weight decimal(12,2),
+    @Tare_Weight decimal(12,2),
+    @Net_Weight decimal(12,2),
+    @LicenseNo NVARCHAR(100),
+    @DriverDetails NVARCHAR(100),
+    @DriverName NVARCHAR(50),
+    @DrivingLicenseNo NVARCHAR(100),
+    @DriverNumber NVARCHAR(50),
+    @ConductorName NVARCHAR(50),
+    @ModeOfPayment NVARCHAR(500),
+    @TransporterName NVARCHAR(50),
+    @ConsigneeName NVARCHAR(50),
+    @ConsigneeAddress NVARCHAR(250),
+    @TripDistance NVARCHAR(20),
+    @DeliveryNote Nvarchar(500),
+    @ChargeID1 BIGINT,
+    @ChargeAmt1 decimal(12,2),
+    @ChargeBasicAmt1 decimal(12,2),
+    @ChargeGSTAmt1 decimal(12,2),
+    @ChargeID2 BIGINT,
+    @ChargeAmt2 decimal(12,2),
+    @ChargeBasicAmt2 decimal(12,2),
+    @ChargeGSTAmt2 decimal(12,2),
+    @ChargeID3 BIGINT,
+    @ChargeAmt3 decimal(12,2),
+    @ChargeBasicAmt3 decimal(12,2),
+    @ChargeGSTAmt3 decimal(12,2),
+    @ChargeID4 BIGINT,
+    @ChargeAmt4 decimal(12,2),
+    @ChargeBasicAmt4 decimal(12,2),
+    @ChargeGSTAmt4 decimal(12,2),
+    @ChargeID5 BIGINT,
+    @ChargeAmt5 decimal(12,2),
+    @ChargeBasicAmt5 decimal(12,2),
+    @ChargeGSTAmt5 decimal(12,2),
+    @NetAmt decimal(12,2),
+    @AdvancePer decimal(12, 2),
+    @AdvanceAmt decimal(12, 2), 
+    @LoginUserID NVARCHAR(20),
+    @RefType nvarchar(50) =null,
+    @ReturnCode INT OUTPUT,
+    @ReturnMsg NVARCHAR(255) OUTPUT,
+    @ReturnOrderNo NVARCHAR(255) OUTPUT
+AS
+BEGIN
+    BEGIN TRANSACTION ChkPoint
+    BEGIN TRY
+        DECLARE @EmployeeIDnew BIGINT;
+        Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20); 
+        Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+               @CompanyType = lower(CompanyType)
+        From viewCompanyUsers
+        Where lower(UserID) = lower(@LoginUserID);
+        /* ----------------------------------------------------- */         
+        SET @ReturnCode = 0;
+        SET @ReturnMsg = '';
+        IF (@OrderNo IS NOT NULL AND @OrderNo<>'')
+        BEGIN
+            IF EXISTS (Select * From PurchaseOrder Where OrderNo = @OrderNo And pkID <> @pkID)  
+            BEGIN 
+                SET @ReturnCode = -1;
+                SET @ReturnMsg = 'Duplicate Order, Order # ' + @OrderNo + ' is already Exists !';
+                SET @ReturnOrderNo = @OrderNo;
+            END 
+        END
+        ELSE 
+        BEGIN 
+            SET @OrderNo = dbo.fnGetPurchaseOrderNo(@OrderDate)
+            SET @ReturnOrderNo = @OrderNo;
+        END
+        /* ----------------------------------------------------- */     
+        IF (@ReturnCode >= 0) 
+        BEGIN
+            IF NOT EXISTS(SELECT * FROM PurchaseOrder WHERE pkID = @pkID)
+            BEGIN
+                SELECT @EmployeeIDnew = dbo.fnGetEmployeeIDByUserID(@LoginUserID)
+                /* ----------------------------------------------------- */ 
+                IF (@UserRole = 'admin')
+                BEGIN
+                    INSERT INTO PurchaseOrder
+                      (OrderNo, OrderDate, CustomerID, QuotationNo,InquiryNo,BuyerRef, BillNo,
+                      PatientName ,PatientType ,FinalAmount ,Percentage ,EstimatedAmt ,
+                      TermsCondition,DeliveryNote, EmployeeID, ApprovalStatus,ProjectName, ApprovedBy, ApprovedDate, 
+                        BasicAmt, DiscountAmt, SGSTAmt, 
+                        CGSTAmt, IGSTAmt, ROffAmt, ChargeID1,ChargeAmt1,ChargeID2,ChargeAmt2,
+                        ChargeID3,ChargeAmt3,ChargeID4,ChargeAmt4,ChargeID5,ChargeAmt5,
+                        ChargeBasicAmt1,ChargeBasicAmt2,ChargeBasicAmt3,ChargeBasicAmt4,ChargeBasicAmt5,
+                        ChargeGSTAmt1,ChargeGSTAmt2,ChargeGSTAmt3,ChargeGSTAmt4,ChargeGSTAmt5,
+                        NetAmt,RefType,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+                      CreatedBy, CreatedDate)
+                    VALUES 
+                      (@OrderNo, @OrderDate, @CustomerID, @QuotationNo,@InquiryNo,@BuyerRef, @BillNo,
+                       @PatientName, @PatientType, @FinalAmount, @Percentage, @EstimatedAmt ,
+                       @TermsCondition,@DeliveryNote, @EmployeeIDnew, 'Approved',@ProjectName, @LoginUserID, GETDATE(),
+                       @BasicAmt, @DiscountAmt, @SGSTAmt, 
+                       @CGSTAmt, @IGSTAmt, @ROffAmt,@ChargeID1,@ChargeAmt1,@ChargeID2,@ChargeAmt2,
+                       @ChargeID3,@ChargeAmt3,@ChargeID4,@ChargeAmt4,@ChargeID5,@ChargeAmt5,
+                       @ChargeBasicAmt1,@ChargeBasicAmt2,@ChargeBasicAmt3,@ChargeBasicAmt4,@ChargeBasicAmt5,
+                       @ChargeGSTAmt1,@ChargeGSTAmt2,@ChargeGSTAmt3,@ChargeGSTAmt4,@ChargeGSTAmt5,,
+                       @NetAmt,@RefType,@AdvancePer,@AdvanceAmt,@TankerNo,@Gross_Weight,@Tare_Weight,@Net_Weight,@LicenseNo,@DriverDetails,@DriverName,@DrivingLicenseNo,@DriverNumber,@ConductorName,@ModeOfPayment,@TransporterName,@ConsigneeName,@ConsigneeAddress,@TripDistance,
+                       @LoginUserID, GETDATE())
+                END
+                ELSE 
+                BEGIN
+                    INSERT INTO PurchaseOrder
+                      (OrderNo, OrderDate, CustomerID, QuotationNo,InquiryNo,BuyerRef, BillNo,
+                        PatientName ,PatientType ,FinalAmount ,Percentage ,EstimatedAmt ,
+                        TermsCondition,DeliveryNote, EmployeeID, ApprovalStatus,ProjectName,
+                        BasicAmt, DiscountAmt, SGSTAmt, 
+                        CGSTAmt, IGSTAmt, ROffAmt, ChargeID1,ChargeAmt1,ChargeID2,ChargeAmt2,
+                        ChargeID3,ChargeAmt3,ChargeID4,ChargeAmt4,ChargeID5,ChargeAmt5,
+                        ChargeBasicAmt1,ChargeBasicAmt2,ChargeBasicAmt3,ChargeBasicAmt4,ChargeBasicAmt5,
+                        ChargeGSTAmt1,ChargeGSTAmt2,ChargeGSTAmt3,ChargeGSTAmt4,ChargeGSTAmt5,
+                        NetAmt,RefType,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+                      CreatedBy, CreatedDate)
+                    VALUES 
+                      (@OrderNo, @OrderDate, @CustomerID, @QuotationNo,@InquiryNo,@BuyerRef,@BillNo,
+                       @PatientName, @PatientType, @FinalAmount, @Percentage, @EstimatedAmt ,
+                       @TermsCondition,@DeliveryNote, @EmployeeIDnew, 'Pending',@ProjectName,
+                       @BasicAmt, @DiscountAmt, @SGSTAmt, 
+                       @CGSTAmt, @IGSTAmt, @ROffAmt,@ChargeID1,@ChargeAmt1,@ChargeID2,@ChargeAmt2,
+                       @ChargeID3,@ChargeAmt3,@ChargeID4,@ChargeAmt4,@ChargeID5,@ChargeAmt5,
+                       @ChargeBasicAmt1,@ChargeBasicAmt2,@ChargeBasicAmt3,@ChargeBasicAmt4,@ChargeBasicAmt5,
+                       @ChargeGSTAmt1,@ChargeGSTAmt2,@ChargeGSTAmt3,@ChargeGSTAmt4,@ChargeGSTAmt5,
+                       @NetAmt, @RefType,@AdvancePer,@AdvanceAmt,@TankerNo,@Gross_Weight,@Tare_Weight,@Net_Weight,@LicenseNo,@DriverDetails,@DriverName,@DrivingLicenseNo,@DriverNumber,@ConductorName,@ModeOfPayment,@TransporterName,@ConsigneeName,@ConsigneeAddress,@TripDistance,
+                       @LoginUserID, GETDATE())
+                END
+                /* ------------------------------------------------------------- */
+                SET @ReturnCode = 1
+                SET @ReturnMsg = 'Purchase Order Added Successfully !'
+            END
+            ELSE 
+            BEGIN
+                Declare @UserID NVARCHAR(20);
+                Select @UserID = UserID From MST_Users Where EmployeeID = @EmployeeID;
+                UPDATE PurchaseOrder
+                SET OrderNo = @OrderNo, 
+                    OrderDate = @OrderDate, 
+                    CustomerID = @CustomerID,
+                    QuotationNo = @QuotationNo, 
+                    InquiryNo = @InquiryNo,
+					BuyerRef = @BuyerRef,
+                    BillNo = @BillNo,
+                    PatientName= @PatientName, 
+                    PatientType = @PatientType, 
+                    FinalAmount = @FinalAmount,
+                    Percentage= @Percentage,
+                    EstimatedAmt = @EstimatedAmt,
+                    TermsCondition = @TermsCondition,
+                    DeliveryNote = @DeliveryNote,
+                    EmployeeID = Case When (@EmployeeID>0) Then @EmployeeID Else EmployeeID End,
+                    ApprovalStatus = @ApprovalStatus,ProjectName = @ProjectName,
+                    BasicAmt=@BasicAmt, DiscountAmt=@DiscountAmt, SGSTAmt=@SGSTAmt, CGSTAmt=@CGSTAmt, IGSTAmt=@IGSTAmt, 
+                    ROffAmt=@ROffAmt, 
+                    ChargeID1=@ChargeID1,ChargeID2=@ChargeID2,ChargeID3=@ChargeID3,ChargeID4=@ChargeID4,ChargeID5=@ChargeID5,
+                    ChargeAmt1=@ChargeAmt1,ChargeAmt2=@ChargeAmt2,ChargeAmt3=@ChargeAmt3,ChargeAmt4=@ChargeAmt4,ChargeAmt5=@ChargeAmt5,
+                    ChargeBasicAmt1 = @ChargeBasicAmt1,ChargeBasicAmt2 = @ChargeBasicAmt2,ChargeBasicAmt3 = @ChargeBasicAmt3,ChargeBasicAmt4 = @ChargeBasicAmt4,ChargeBasicAmt5 = @ChargeBasicAmt5,
+                    ChargeGSTAmt1=@ChargeGSTAmt1,ChargeGSTAmt2 = @ChargeGSTAmt2,ChargeGSTAmt3 = @ChargeGSTAmt3,ChargeGSTAmt4 = @ChargeGSTAmt4,ChargeGSTAmt5 = @ChargeGSTAmt5,
+                    NetAmt=@NetAmt,RefType = @RefType,
+                    AdvancePer = @AdvancePer,
+                    TankerNo = @TankerNo,
+                    Gross_Weight = @Gross_Weight,
+                    Tare_Weight = @Tare_Weight,
+                    Net_Weight = @Net_Weight,
+                    LicenseNo = @LicenseNo,
+                    DriverDetails = @DriverDetails,
+                    DriverName = @DriverName,
+                    DrivingLicenseNo = @DrivingLicenseNo,
+                    DriverNumber = @DriverNumber,
+                    ConductorName = @ConductorName,
+                    ModeOfPayment = @ModeOfPayment,
+                    TransporterName = @TransporterName,
+                    ConsigneeName = @ConsigneeName,
+                    ConsigneeAddress = @ConsigneeAddress,
+                    TripDistance = @TripDistance,
+                    AdvanceAmt = @AdvanceAmt,
+                    UpdatedBy = @LoginUserID, UpdatedDate = GETDATE()
+                WHERE pkID = @pkID;
+                IF (@UserID IS NOT NULL AND @UserID<>'')
+                BEGIN 
+                    UPDATE PurchaseOrder Set CreatedBy = @UserID Where OrderNo = @OrderNo;
+                END             
+                SET @ReturnCode = 2
+                SET @ReturnMsg = 'Purchase Order Updated Successfully !'
+            END
+        END
+        -- Save New/Existing Record in Client Table     
+        COMMIT TRANSACTION  ChkPoint
+    END TRY 
+    BEGIN CATCH
+        ROLLBACK TRANSACTION ChkPoint
+        DECLARE @ErrorMessage NVARCHAR(4000);
+        DECLARE @ErrorSeverity INT;
+        DECLARE @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+        
+        SET @ReturnCode = 0
+        SET @ReturnMsg = 'Some Error in occure'
+    END CATCH
+    SELECT @ReturnCode, @ReturnMsg
+END
+
+-----------------------------------------------------PurchaseOrderList-------------------------------------
+
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderList')
+	DROP PROCEDURE [dbo].[PurchaseOrderList]
+GO
+USE [Locanix]
+Create PROCEDURE [dbo].[PurchaseOrderList] 
+    @pkID BIGINT=0,
+    @LoginUserID NVARCHAR(20)=NULL,
+    @SearchKey   NVARCHAR(50)=NULL,
+    @PageNo INT = 0,
+    @PageSize INT = 0,
+    @TotalCount INT = 0 OUTPUT  
+AS
+BEGIN
+    SET NOCOUNT ON 
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+    Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+           @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+    From viewCompanyUsers
+    Where lower(UserID) = lower(@LoginUserID);
+    /* ---------------------------------------------------------------- */
+    DECLARE @SupervisorID BIGINT
+    DECLARE @StartNo INT
+    DECLARE @EndNo INT
+    SET @StartNo = (@PageNo * @PageSize) - (@PageSize - 1)
+    SET @EndNo = (@PageNo * @PageSize)
+    SET @SupervisorID = dbo.fnGetEmployeeIDByUserID(@LoginUserID);
+    /* -------------------------------------------------------------------- */
+    WITH CTE as 
+    (select  pkID,ReportTo,EmployeeName,1 as level
+    from OrganizationEmployee where pkID = @SupervisorID
+    union all
+    select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+    from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+    SELECT @TotalCount = (Select COUNT(*) From [PurchaseOrder] 
+    Inner Join [MST_Customer] On [PurchaseOrder].CustomerID = MST_Customer.CustomerID
+    WHERE (EmployeeID IN (Select pkID From CTE) Or lower(@LoginUserID) = 'admin'))  
+    -- ----------------------------------------------------------------------------
+    IF (@SearchKey IS NOT NULL AND @SearchKey<>'')
+    BEGIN
+            WITH CTE as 
+            (select  pkID,ReportTo,EmployeeName,1 as level
+            from OrganizationEmployee where pkID = @SupervisorID
+            union all
+            select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+            from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+            Select *
+            From (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate DESC, OrderNo DESC) AS RowNum,
+            qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo,qt.InquiryNo,qt.BuyerRef, qt.BillNo, 
+            qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+            qt.TermsCondition, qt.ApprovalStatus, qt.DeliveryNote,
+            qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+            cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+            cust.ContactNo1, cust.ContactNo2, 
+            qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+            qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+            qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+            qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+            dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+            dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+            dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+            dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+            dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+            qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+            qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+            qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+            qt.NetAmt,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+            (case when COALESCE(qt.QuotationNo, qt.InquiryNo) is not null then (case when left(COALESCE(qt.QuotationNo, qt.InquiryNo),2)='QT' then 'Quotation' else 'Inquiry' end) else null end) as RefType,
+            COALESCE(QuotationNo, InquiryNo) as RefNo,
+            qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+            dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+            dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+            dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+            (Select Sum(Amount) From PurchaseOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount",ProjectName
+           From [PurchaseOrder] qt 
+           Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+           Where (qt.EmployeeID IN (Select pkID From CTE) Or lower(@UserRole) = 'admin')) AS Temp
+           Where Concat(OrderNo, CustomerName, RefNo, CreatedEmployeeName, ApprovalStatus, OrderAmount) Like Concat('%',@SearchKey,'%');
+        /* ------------------------------------------------------------------------- */
+        SET @TotalCount = @@ROWCOUNT;
+        Return;
+    END
+    -- ============================================================================
+    BEGIN
+        IF(@pkID = '' or @pkID IS NULL or @pkID = 0)
+        BEGIN
+            WITH CTE as 
+            (select  pkID,ReportTo,EmployeeName,1 as level
+            from OrganizationEmployee where pkID = @SupervisorID
+            union all
+            select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+            from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+            Select *
+            From (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate DESC, OrderNo DESC) AS RowNum,
+            qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo,qt.InquiryNo,qt.BuyerRef, qt.BillNo, 
+            qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+            qt.TermsCondition, qt.ApprovalStatus,  qt.DeliveryNote,
+            qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+            cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+            cust.ContactNo1, cust.ContactNo2, 
+            qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+            qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+            qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+            qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+            dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+            dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+            dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+            dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+            dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+            qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+            qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+            qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+            qt.NetAmt,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+            (case when COALESCE(qt.QuotationNo, qt.InquiryNo) is not null then (case when left(COALESCE(qt.QuotationNo, qt.InquiryNo),2)='QT' then 'Quotation' else 'Inquiry' end) else null end) as RefType,
+            COALESCE(QuotationNo, InquiryNo) as RefNo,
+            qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+            dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+            dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+            dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+            (Select Sum(Amount) From PurchaseOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount",ProjectName
+           From [PurchaseOrder] qt Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+           Where (qt.EmployeeID IN (Select pkID From CTE) Or lower(@UserRole) = 'admin')) AS Temp
+           WHERE RowNum BETWEEN @StartNo AND @EndNo 
+        END
+        ELSE
+        BEGIN
+            WITH CTE as 
+            (select  pkID,ReportTo,EmployeeName,1 as level
+            from OrganizationEmployee where pkID = @SupervisorID
+            union all
+            select child.pkID, child.ReportTo, child.EmployeeName, level + 1
+            from OrganizationEmployee child Join CTE parent ON child.ReportTo = parent.pkID)
+            SELECT *
+            FROM (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate DESC, OrderNo DESC) AS RowNum,
+            qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo,qt.InquiryNo,qt.BuyerRef,  qt.BillNo,
+            qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+            qt.TermsCondition, qt.ApprovalStatus,  qt.DeliveryNote,
+            qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+            cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+            cust.ContactNo1, cust.ContactNo2, 
+            qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+            qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+            qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+            qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+            dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+            dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+            dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+            dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+            dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+            qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+            qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+            qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+            qt.NetAmt,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+            (case when COALESCE(qt.QuotationNo, qt.InquiryNo) is not null then (case when left(COALESCE(qt.QuotationNo, qt.InquiryNo),2)='QT' then 'Quotation' else 'Inquiry' end) else null end) as RefType,
+            COALESCE(QuotationNo, InquiryNo) as RefNo,
+            qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+            dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+            dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+            dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+            (Select Sum(Amount) From PurchaseOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount",ProjectName
+        From [PurchaseOrder] qt Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+        Where pkID = @pkID
+        ) AS Temp  
+        END
+    END
+END
+
+-----------------------------------------PurchaseOrderListByUser---------------------------------------
+
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderListByUser')
+	DROP PROCEDURE [dbo].[PurchaseOrderListByUser]
+GO
+
+
+Create  PROCEDURE [dbo].[PurchaseOrderListByUser] 
+	@CustomerID BIGINT=0,
+	@LoginUserID NVARCHAR(20)=NULL,
+	@ApprovalStatus NVARCHAR(20)=NULL,
+	@Month BIGINT = 0,
+	@Year BIGINT = 0		
+AS
+BEGIN
+	SET NOCOUNT ON 
+	Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+
+	Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+	       @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+	From viewCompanyUsers
+	Where lower(UserID) = lower(@LoginUserID);
+	/* ---------------------------------------------------------------- */
+	DECLARE @SupervisorID BIGINT
+	DECLARE @StartNo INT
+	DECLARE @EndNo INT
+	
+	SET @SupervisorID = dbo.fnGetEmployeeIDByUserID(@LoginUserID);
+	/* -------------------------------------------------------------------- */
+	SELECT *
+	FROM (SELECT ROW_NUMBER() OVER(ORDER BY OrderDate DESC, OrderNo DESC) AS RowNum,
+		qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo, qt.InquiryNo,qt.BuyerRef,  qt.BillNo, 
+		qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+		qt.TermsCondition, qt.ApprovalStatus, 
+		qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+		cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+		cust.ContactNo1, cust.ContactNo2, 
+		qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+		qt.BasicAmt,qt.DiscountAmt,(CGSTAmt + SGSTAmt + IGSTAmt ) as "TaxAmt",
+        qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+        qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+        dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+        dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+        dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+        dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+        dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+        qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+        qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+        qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+        qt.NetAmt,AdvancePer,AdvanceAmt,qt.ProjectName, qt.TankerNo, qt.Gross_Weight,
+		qt.Tare_Weight,qt.Net_Weight,qt.LicenseNo,qt.DriverDetails,qt.DriverName,
+		qt.DrivingLicenseNo,qt.DriverNumber,qt.ConductorName,qt.ModeOfPayment,qt.TransporterName,
+		qt.ConsigneeName,qt.ConsigneeAddress,qt.TripDistance,
+		qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+		dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+		dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+		dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+		(Select Sum(Amount) From SalesOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount"
+		
+	From [PurchaseOrder] qt Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+	Where (Case When (@CustomerID=0 Or @CustomerID IS NULL) Then 1 Else qt.CustomerID End = 
+		   Case When (@CustomerID=0 Or @CustomerID IS NULL) Then 1 Else @CustomerID End)
+	    And ((Case When (@Month<>0) Then Month(OrderDate) Else 1 End = Case When (@Month<>0) Then @Month Else 1 End) 
+		And (Case When (@Year<>0) Then Year(OrderDate) Else 1 End = Case When (@Year<>0) Then @Year Else 1 End))
+		And (Case When (@ApprovalStatus IS NULL OR @ApprovalStatus='') Then 'a' Else lower(qt.ApprovalStatus) End = 
+			Case When (@ApprovalStatus IS NULL OR @ApprovalStatus='') Then 'a' Else lower(@ApprovalStatus) End)
+	) AS Temp;
+END
+
+----------------------------------------------------------
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'PurchaseOrderListByCustomer')
+	DROP PROCEDURE [dbo].[PurchaseOrderListByCustomer]
+GO
+
+CREATE PROCEDURE [dbo].[PurchaseOrderListByCustomer] 
+    @CustomerID BIGINT=0,
+	@ProductID BIGINT=0,
+    @LoginUserID NVARCHAR(20)=NULL,
+	@ApprovalStatus NVARCHAR(50)=NULL,
+    @Month BIGINT = 0,
+    @Year BIGINT = 0
+AS
+BEGIN
+    SET NOCOUNT ON 
+    Declare @UserRole NVARCHAR(50), @CompanyID BIGINT, @CompanyType NVARCHAR(20), @EmployeeID BIGINT;
+    Select @UserRole = lower(RoleCode), @CompanyID = lower(CompanyID), 
+           @CompanyType = lower(CompanyType), @EmployeeID = EmployeeID
+    From viewCompanyUsers
+    Where lower(UserID) = lower(@LoginUserID);
+    /* -------------------------------------------------------------------- */
+    Select *
+    From (SELECT ROW_NUMBER() OVER(ORDER BY qt.OrderDate DESC, qt.OrderNo DESC) AS RowNum,
+    qt.pkID, qt.OrderNo, qt.OrderDate, qt.QuotationNo,qt.InquiryNo,qt.BuyerRef, qt.BillNo, 
+    qt.PatientName ,qt.PatientType ,qt.FinalAmount ,qt.Percentage ,qt.EstimatedAmt,
+    qt.TermsCondition, qt.ApprovalStatus, 
+    qt.CustomerID, dbo.fnGetCustomerName(qt.CustomerID) As "CustomerName", 
+    cust.Address, cust.Area, PinCode, dbo.fnGetCityName(cust.CityCode) As "City", cust.EmailAddress,
+    cust.ContactNo1, cust.ContactNo2, 
+    qt.EmployeeID, dbo.fnGetOrgEmployee(qt.EmployeeID) As "EmployeeName",
+    qt.BasicAmt,qt.DiscountAmt,(qt.CGSTAmt + qt.SGSTAmt + qt.IGSTAmt ) as "TaxAmt",
+    qt.SGSTAmt,qt.CGSTAmt,qt.IGSTAmt,qt.RoffAmt,
+    qt.ChargeID1,qt.ChargeID2,qt.ChargeID3,qt.ChargeID4,qt.ChargeID5,
+    dbo.fnGetOtherChargeType(qt.ChargeID1) As "ChargeName1",
+    dbo.fnGetOtherChargeType(qt.ChargeID2) As "ChargeName2",
+    dbo.fnGetOtherChargeType(qt.ChargeID3) As "ChargeName3",
+    dbo.fnGetOtherChargeType(qt.ChargeID4) As "ChargeName4",
+    dbo.fnGetOtherChargeType(qt.ChargeID5) As "ChargeName5",
+    qt.ChargeAmt1,qt.ChargeAmt2,qt.ChargeAmt3,qt.ChargeAmt4,qt.ChargeAmt5,
+    qt.ChargeBasicAmt1 ,qt.ChargeBasicAmt2, qt.ChargeBasicAmt3, qt.ChargeBasicAmt4, qt.ChargeBasicAmt5,
+    qt.ChargeGSTAmt1, qt.ChargeGSTAmt2, qt.ChargeGSTAmt3, qt.ChargeGSTAmt4, qt.ChargeGSTAmt5,
+    qt.NetAmt,AdvancePer,AdvanceAmt,TankerNo,Gross_Weight,Tare_Weight,Net_Weight,LicenseNo,DriverDetails,DriverName,DrivingLicenseNo,DriverNumber,ConductorName,ModeOfPayment,TransporterName,ConsigneeName,ConsigneeAddress,TripDistance,
+    (case when COALESCE(qt.QuotationNo, qt.InquiryNo) is not null then (case when left(COALESCE(qt.QuotationNo, qt.InquiryNo),2)='QT' then 'Quotation' else 'Inquiry' end) else null end) as RefType,
+    COALESCE(QuotationNo, InquiryNo) as RefNo,
+    qt.CreatedBy, qt.CreatedDate, qt.UpdatedBy, qt.UpdatedDate, qt.ApprovedBy, qt.ApprovedDate, 
+    dbo.fnGetEmployeeByUserID(qt.CreatedBy) As "CreatedEmployeeName",
+    dbo.fnGetEmployeeByUserID(qt.UpdatedBy) As "UpdatedEmployeeName",
+    dbo.fnGetCompanyIDByUserID(qt.CreatedBy) As "CompanyID",
+    (Select Sum(Amount) From PurchaseOrder_Detail qd Where qd.OrderNo = qt.OrderNo) As "OrderAmount",ProjectName
+    From PurchaseOrder_Detail pod
+	Inner Join [PurchaseOrder] qt On pod.OrderNo = qt.OrderNo 
+	Inner Join [MST_Customer] cust On qt.CustomerID = cust.CustomerID
+    Where (Case When (@ProductID=0) Then 1 Else pod.ProductID End = 
+	       Case When (@ProductID=0) Then 1 Else @ProductID End) 
+	  And (Case When (@CustomerID=0) Then 1 Else qt.CustomerID End = 
+	       Case When (@CustomerID=0) Then 1 Else @CustomerID End) 
+      And ((Case When (@Month<>0) Then Month(OrderDate) Else 1 End = Case When (@Month<>0) Then @Month Else 1 End)
+	  And  (Case When (@Year<>0) Then Year(OrderDate) Else 1 End = Case When (@Year<>0) Then @Year Else 1 End))
+	) AS Temp
+END
+
+
+
+
+
+
+
+
